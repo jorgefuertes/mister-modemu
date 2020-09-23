@@ -2,7 +2,6 @@ package comm
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jorgefuertes/mister-modemu/lib/cfg"
@@ -11,7 +10,7 @@ import (
 
 // ReadLoop - Read loop
 func ReadLoop() {
-	console.Info("CONN/READ", "Listening…")
+	console.Info("CONN/RX", "Listening…")
 	buf := make([]byte, 128)
 
 	// read loop
@@ -21,18 +20,17 @@ func ReadLoop() {
 			if err.Error() == "EOF" {
 				time.Sleep(50 * time.Millisecond)
 			} else {
-				console.Error("CONN/RECV", err.Error())
+				console.Error("CONN/RX", err.Error())
 			}
 		} else {
-			recv := fmt.Sprintf("%q", buf[:n])
 			if cfg.IsDev() {
-				console.Debug("CONN/RECV", recv)
+				console.Debug("CONN/RX", fmt.Sprintf("%q", buf[:n]))
 			}
-			if strings.HasPrefix(recv, "AT") {
-				console.Debug("COMMAND", recv)
+			if string(buf[0:1]) == "AT" {
+				console.Debug("COMMAND", fmt.Sprintf("%q", buf[:n]))
 				Write("OK")
 			} else {
-				console.Debug("WHAT?", recv)
+				Write("WHAT?")
 			}
 		}
 	}
