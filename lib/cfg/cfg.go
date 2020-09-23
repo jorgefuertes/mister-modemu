@@ -17,7 +17,7 @@ var Config *cfg
 var once sync.Once
 var version = "v0.1.0b"
 var author = "Jorge Fuertes AKA Queru & Ramón Martinez AKA Rampa"
-var port = "/dev/ttyS2"
+var port = "/dev/ttyS1"
 var baud = 115200
 
 func init() {

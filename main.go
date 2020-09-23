@@ -17,7 +17,7 @@ func main() {
 	cfg.Config.Port = kingpin.Flag(
 		"port",
 		"Serial port",
-	).Short('p').Default("/dev/ttyS2").String()
+	).Short('p').Default("/dev/ttyS1").String()
 	cfg.Config.Baud = kingpin.Flag(
 		"baud",
 		"Serial Speed",
@@ -35,10 +35,6 @@ func main() {
 
 	console.Info("CFG/PORT/BAUD", *cfg.Config.Port, " ", *cfg.Config.Baud)
 
-	comm.Read()
-
-	// Channels
-	//in := make(chan string)
-	//out := make(chan string)
-
+	comm.Open(cfg.Config.Port, cfg.Config.Baud)
+	comm.ReadLoop()
 }
