@@ -3,7 +3,7 @@
 EXE_NAME="mister-modemu"
 VER=$(git describe --tags)
 MISTER="root@192.168.1.10"
-DEST="/media/fat/"
+DEST="/media/fat"
 
 mkdir -p bin
 rm -f bin/$EXE_NAME*
@@ -20,5 +20,5 @@ then
     exit 1
 fi
 
-scp $o $MISTER$DEST/.
+scp bin/$o $MISTER:$DEST/.
 ssh $MISTER $DEST/$o -e dev
