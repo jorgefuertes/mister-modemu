@@ -18,19 +18,19 @@ func ReadLoop() {
 		n, err := s.Read(buf)
 		if err != nil {
 			if err.Error() == "EOF" {
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 			} else {
 				console.Error("CONN/RX", err.Error())
 			}
 		} else {
+			if buf[0] == 13 || buf[0] == 10 {
+				continue
+			}
 			if cfg.IsDev() {
 				console.Debug("CONN/RX", fmt.Sprintf("%q", buf[:n]))
 			}
-			if string(buf[0:1]) == "AT" {
-				console.Debug("COMMAND", fmt.Sprintf("%q", buf[:n]))
-				Write("OK")
-			} else {
-				Write("WHAT?")
+			if string(buf[0:2]) == "AT" {
+				write(parseCmd(buf[:n]) + "\r\n")
 			}
 		}
 	}

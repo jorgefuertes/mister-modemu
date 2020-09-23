@@ -1,10 +1,13 @@
 package comm
 
-import "github.com/jorgefuertes/mister-modemu/lib/console"
+import (
+	"fmt"
 
-// Write - Write over port
-func Write(data string) (int, error) {
-	console.Debug("COMM/TX", data)
+	"github.com/jorgefuertes/mister-modemu/lib/console"
+)
+
+func write(data string) (int, error) {
+	console.Debug("COMM/TX", fmt.Sprintf("%q", data))
 	b := []byte(data)
 	n, err := s.Write(b)
 	if err != nil {

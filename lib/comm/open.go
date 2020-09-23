@@ -22,4 +22,5 @@ func Open(port *string, baud *int) {
 		console.Error("COMM/OPEN", err.Error())
 		os.Exit(1)
 	}
+	checkStatus()
 }

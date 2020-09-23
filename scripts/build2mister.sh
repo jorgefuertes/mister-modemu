@@ -20,5 +20,6 @@ then
     exit 1
 fi
 
-scp bin/$o $MISTER:$DEST/.
-ssh $MISTER $DEST/$o -e dev
+scp bin/$o "${MISTER}:${DEST}/mister-modemu.tmp"
+ssh $MISTER mv "${DEST}/mister-modemu.tmp" "${DEST}/${o}"
+ssh $MISTER "${DEST}/${o} -e dev"
