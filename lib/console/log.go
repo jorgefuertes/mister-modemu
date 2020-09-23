@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/fatih/color"
-	"github.com/jorgefuertes/mister-modemu/cfg"
+	"github.com/jorgefuertes/mister-modemu/lib/cfg"
 )
 
 // Info - Log info line
