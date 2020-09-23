@@ -9,6 +9,9 @@ import (
 	"github.com/jorgefuertes/mister-modemu/lib/console"
 )
 
+const ok = `OK`
+const er = `ERROR`
+
 func getArg(cmd *string) string {
 	r := regexp.MustCompile(`^AT\+[A-Z]+\=(?P<Arg>.*$)`)
 	m := r.FindStringSubmatch(*cmd)
@@ -23,17 +26,42 @@ func parseCmd(buf []byte) string {
 	cmd := string(buf[:n])
 	console.Debug("COMM/PARSE", cmd)
 
+	// AT
+	if cmd == "AT" {
+		return ok
+	}
+
+	// AT+RST
+	if cmd == "AT+RST" {
+		resetStatus()
+		return ok
+	}
+
+	// ATE
+	if strings.HasPrefix(cmd, "ATE") {
+		if strings.HasSuffix(cmd, "0") {
+			status.echo = false
+			return ok
+		} else if strings.HasSuffix(cmd, "1") {
+			status.echo = true
+			return ok
+		}
+		return er
+	}
+
+	// AT+CIPSTATUS
 	if cmd == "AT+CIPSTATUS" {
 		return fmt.Sprintf("STATUS:%v", status.st)
 	}
 
+	// AT+CIPDOMAIN
 	if strings.HasPrefix(cmd, "AT+CIPDOMAIN") {
 		name := getArg(&cmd)
 		if name == "" {
-			return "ERROR"
+			return er
 		}
 		if len(name) < 3 {
-			return "ERROR"
+			return er
 		}
 		ips, err := net.LookupIP(name)
 		if err != nil {
@@ -43,7 +71,7 @@ func parseCmd(buf []byte) string {
 		return fmt.Sprintf("+CIPDOMAIN:%s", ips[0])
 	}
 
-	return "OK"
+	return ok
 }
 
 // AT+CIPDOMAIN

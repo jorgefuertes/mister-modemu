@@ -36,5 +36,6 @@ func main() {
 	console.Info("CFG/PORT/BAUD", *cfg.Config.Port, " ", *cfg.Config.Baud)
 
 	comm.Open(cfg.Config.Port, cfg.Config.Baud)
+	defer comm.Close()
 	comm.ReadLoop()
 }
