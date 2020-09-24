@@ -6,12 +6,6 @@ import (
 	"github.com/jorgefuertes/mister-modemu/lib/console"
 )
 
-const cr = 0x0D
-const lf = 0x0A
-const sp = 0x20
-const del = 0x7F
-const bs = 0x08
-
 // ReadLoop - Read loop
 func ReadLoop() {
 	console.Info("CONN/RX", "Listening…")

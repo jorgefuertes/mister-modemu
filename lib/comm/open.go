@@ -7,8 +7,6 @@ import (
 	"github.com/tarm/serial"
 )
 
-var s *serial.Port
-
 // Open - Open the serial port
 func Open(port *string, baud *int) {
 	if _, err := os.Stat(*port); os.IsNotExist(err) {

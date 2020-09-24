@@ -7,11 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jorgefuertes/mister-modemu/lib/cfg"
 	"github.com/jorgefuertes/mister-modemu/lib/console"
 )
-
-const ok = `OK`
-const er = `ERROR`
 
 // one arg line, even if it has colon sep args
 func getArg(cmd *string) string {
@@ -49,6 +47,7 @@ func bufToStr(buf *[]byte) string {
 	return str
 }
 
+// parser
 func parseCmd(cmd string) string {
 	console.Debug("COMM/PARSE", "'"+cmd+"'")
 
@@ -57,10 +56,29 @@ func parseCmd(cmd string) string {
 		return ok
 	}
 
+	// AT+VERSION
+	if cmd == "AT+VERSION" {
+		return *cfg.Config.Version
+	}
+
+	// AT+AUTHOR
+	if cmd == "AT+AUTHOR" {
+		return *cfg.Config.Author
+	}
+
 	// AT+RST
 	if cmd == "AT+RST" {
 		resetStatus()
 		return ok
+	}
+
+	// AT+HELP
+	if cmd == "AT+HELP" {
+		var output string
+		for _, line := range help {
+			output += line + "\r\n"
+		}
+		return output
 	}
 
 	// ATE
@@ -111,6 +129,15 @@ func parseCmd(cmd string) string {
 		}
 		status.cipmux = int8(mode)
 		return ok
+	}
+
+	// AT+CIFSR - Gets the local IP address
+	if strings.HasPrefix(cmd, "AT+CIFSR") {
+		ip, err := getOutboundIP()
+		if err != nil {
+			return er
+		}
+		return "+CIFSR:APIP," + ip.String()
 	}
 
 	// AT+CIPSTART
