@@ -1,21 +1,21 @@
 package comm
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/jorgefuertes/mister-modemu/lib/cfg"
 	"github.com/jorgefuertes/mister-modemu/lib/console"
 )
 
 const cr = 0x0D
 const lf = 0x0A
+const sp = 0x20
 
 // ReadLoop - Read loop
 func ReadLoop() {
 	console.Info("CONN/RX", "Listening…")
-	cBuf := make([]byte, 1, 128)
-	rBuf := make([]byte, 128)
+	cBuf := make([]byte, 1, 1024)
+	cBuf = []byte{}
+	rBuf := make([]byte, 1, 1)
 
 	// read loop
 	for {
@@ -39,14 +39,12 @@ func ReadLoop() {
 				break
 			}
 		}
-		if cfg.IsDev() {
-			console.Debug("CONN/RX/CBUF", len(cBuf), ": ", string(cBuf))
-		}
-		console.Debug("LAST", fmt.Sprintf("%q", cBuf))
-		if cBuf[len(cBuf)-1] == lf {
-			_ = cBuf[:len(cBuf)-2]
+		if cBuf[len(cBuf)-1] == lf || cBuf[len(cBuf)-1] == cr {
+			// _ = cBuf[:len(cBuf)-1]
 			if string(cBuf[0:2]) == "AT" {
-				write(parseCmd(cBuf))
+				cmd := bufToStr(&cBuf)
+				res := parseCmd(cmd)
+				write(res + "\r\n")
 			}
 			cBuf = []byte{}
 		}

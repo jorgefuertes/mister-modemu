@@ -21,10 +21,23 @@ func getArg(cmd *string) string {
 	return m[1]
 }
 
-func parseCmd(buf []byte) string {
-	n := len(buf) - 2
-	cmd := string(buf[:n])
-	console.Debug("COMM/PARSE", cmd)
+func bufToStr(buf *[]byte) string {
+	var str string
+	for _, b := range *buf {
+		if b == cr || b == lf {
+			break
+		}
+		if b == 0x00 {
+			continue
+		}
+		str += string(b)
+	}
+
+	return str
+}
+
+func parseCmd(cmd string) string {
+	console.Debug("COMM/PARSE", "'"+cmd+"'")
 
 	// AT
 	if cmd == "AT" {
