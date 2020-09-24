@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/jorgefuertes/mister-modemu/lib/console"
@@ -84,6 +85,85 @@ func parseCmd(cmd string) string {
 		return fmt.Sprintf("+CIPDOMAIN:%s", ips[0])
 	}
 
+	// AT+CIPMUX
+	if strings.HasPrefix(cmd, "AT+CIPMUX") {
+		if cmd == "AT+CIPMUX?" {
+			return fmt.Sprintf("+CIPMUX:%v\r\nOK", status.cipmux)
+		}
+		mode, err := strconv.Atoi(getArg(&cmd))
+		if err != nil {
+			return er
+		}
+		if mode > 1 || mode < 0 {
+			return er
+		}
+		status.cipmux = int8(mode)
+		return ok
+	}
+
+	// AT+CIPSTART
+	if strings.HasPrefix(cmd, "AT+CIPSTART") {
+		arg := getArg(&cmd)
+		args := strings.Split(arg, ",")
+		if status.cipmux == 0 {
+			matched, err := regexp.MatchString("^(TCP|UDP|SSL),([0-9.]{7,15}),([0-9]{1,5})([,0-9]*)$", arg)
+			if !matched || err != nil {
+				return er
+			}
+
+			c := &connection{}
+			c.t, c.ip = args[0], args[1]
+
+			port, err := strconv.Atoi(args[2])
+			if err != nil {
+				return er
+			}
+			c.port = int16(port)
+
+			if len(args) > 3 {
+				keep, err := strconv.Atoi(args[3])
+				if err != nil {
+					return er
+				}
+				c.keep = int16(keep)
+			}
+
+			status.connections[0] = c
+		} else {
+			matched, err := regexp.MatchString("^[0-4]{1},(TCP|UDP|SSL),([0-9.]{7,15}),([0-9]{1,5})([,0-9]*)$", arg)
+			if !matched || err != nil {
+				return er
+			}
+
+			id, err := strconv.Atoi(args[0])
+			if err != nil {
+				return er
+			}
+			c := &connection{}
+			c.t, c.ip = args[1], args[2]
+
+			port, err := strconv.Atoi(args[3])
+			if err != nil {
+				return er
+			}
+			c.port = int16(port)
+
+			if len(args) > 4 {
+				keep, err := strconv.Atoi(args[4])
+				if err != nil {
+					return er
+				}
+				c.keep = int16(keep)
+			}
+
+			status.connections[id] = c
+		}
+
+		return ok
+
+	}
+
+	// Fallback to OK
 	return ok
 }
 

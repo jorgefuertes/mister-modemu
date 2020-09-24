@@ -9,6 +9,8 @@ import (
 const cr = 0x0D
 const lf = 0x0A
 const sp = 0x20
+const del = 0x7F
+const bs = 0x08
 
 // ReadLoop - Read loop
 func ReadLoop() {
@@ -27,8 +29,21 @@ func ReadLoop() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+		console.Debug("CONN/RX", rBuf[0])
+		if rBuf[0] == bs || rBuf[0] == del {
+			if len(cBuf) > 0 {
+				cBuf = cBuf[:len(cBuf)-1]
+			}
+			if status.echo {
+				writeByte(&[]byte{bs})
+			}
+			continue
+		}
 		if status.echo {
 			writeByte(&rBuf)
+			if rBuf[0] == cr {
+				writeByte(&[]byte{lf})
+			}
 		}
 		for i := 0; i < n; i++ {
 			cBuf = append(cBuf, rBuf[i])
