@@ -13,13 +13,25 @@ import (
 const ok = `OK`
 const er = `ERROR`
 
+// one arg line, even if it has colon sep args
 func getArg(cmd *string) string {
-	r := regexp.MustCompile(`^AT\+[A-Z]+\=(?P<Arg>.*$)`)
+	r := regexp.MustCompile(`^AT\+[A-Z]+\=\"*(?P<Arg>.*)\"*$`)
 	m := r.FindStringSubmatch(*cmd)
 	if len(m) < 2 {
 		return ""
 	}
 	return m[1]
+}
+
+// slice of args from colon sep args
+func getArgs(argLine *string) []string {
+	args := strings.Split(*argLine, ",")
+	for i, a := range args {
+		args[i] = strings.Trim(a, `"`)
+		console.Debug("ARG", args[i])
+	}
+
+	return args
 }
 
 func bufToStr(buf *[]byte) string {
@@ -104,18 +116,16 @@ func parseCmd(cmd string) string {
 	// AT+CIPSTART
 	if strings.HasPrefix(cmd, "AT+CIPSTART") {
 		arg := getArg(&cmd)
-		args := strings.Split(arg, ",")
-		if status.cipmux == 0 {
-			matched, err := regexp.MatchString("^(TCP|UDP|SSL),([0-9.]{7,15}),([0-9]{1,5})([,0-9]*)$", arg)
-			if !matched || err != nil {
-				return er
-			}
+		args := getArgs(&arg)
 
+		if status.cipmux == 0 {
+			// single conn
 			c := &connection{}
 			c.t, c.ip = args[0], args[1]
 
 			port, err := strconv.Atoi(args[2])
 			if err != nil {
+				console.Debug("CONN/START", "Invalid port")
 				return er
 			}
 			c.port = int16(port)
@@ -123,6 +133,7 @@ func parseCmd(cmd string) string {
 			if len(args) > 3 {
 				keep, err := strconv.Atoi(args[3])
 				if err != nil {
+					console.Debug("CONN/START", "Invalid keep alive")
 					return er
 				}
 				c.keep = int16(keep)
@@ -130,11 +141,7 @@ func parseCmd(cmd string) string {
 
 			status.connections[0] = c
 		} else {
-			matched, err := regexp.MatchString("^[0-4]{1},(TCP|UDP|SSL),([0-9.]{7,15}),([0-9]{1,5})([,0-9]*)$", arg)
-			if !matched || err != nil {
-				return er
-			}
-
+			// multiple conn
 			id, err := strconv.Atoi(args[0])
 			if err != nil {
 				return er
