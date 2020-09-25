@@ -26,7 +26,7 @@ func resetStatus() {
 		cipmux: 0,
 		echo:   true,
 	}
-	_, err := getOutboundIP()
+	_, err := getLocalIP()
 	if err != nil {
 		status.st = 5
 	} else {

@@ -140,11 +140,21 @@ func parseCmd(cmd string) string {
 
 	// AT+CIFSR - Gets the local IP address
 	if strings.HasPrefix(cmd, "AT+CIFSR") {
-		ip, err := getOutboundIP()
+		ip, err := getLocalIP()
 		if err != nil {
+			console.Error("AT+CIFSR", err.Error())
 			return er
 		}
-		return "+CIFSR:APIP," + ip.String() + "\r\n" + ok
+		mac, err := getLocalMac(ip)
+		if err != nil {
+			console.Error("AT+CIFSR", err.Error())
+			return er
+		}
+		return fmt.Sprintf(
+			"+CIFSR:APIP,\"%s\"\r\n+CIFSR:APMAC,\"%s\"\r\n+CIFSR:STAIP,\"%s\"\r\n"+
+				"+CIFSR:STAMAC,\"%s\"\r\nOK\r\n",
+			ip.String(), mac.String(), ip.String(), mac.String(),
+		)
 	}
 
 	// AT+CIPSTART
