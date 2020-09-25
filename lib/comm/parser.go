@@ -95,7 +95,14 @@ func parseCmd(cmd string) string {
 
 	// AT+CIPSTATUS
 	if cmd == "AT+CIPSTATUS" {
-		return fmt.Sprintf("STATUS:%v", status.st)
+		var output string
+		output += fmt.Sprintf("STATUS:%v", status.st)
+		for i, c := range status.connections {
+			output += fmt.Sprintf("\r\n+CIPSTATUS:%v,%s,%s,%v,%v,%v",
+				i, c.t, c.ip, c.port, 0, c.cs)
+		}
+
+		return output
 	}
 
 	// AT+CIPDOMAIN
@@ -127,7 +134,7 @@ func parseCmd(cmd string) string {
 		if mode > 1 || mode < 0 {
 			return er
 		}
-		status.cipmux = int8(mode)
+		status.cipmux = uint8(mode)
 		return ok
 	}
 
@@ -148,86 +155,85 @@ func parseCmd(cmd string) string {
 		if status.cipmux == 0 {
 			// single conn
 			c := &connection{}
-			c.t, c.ip = args[0], args[1]
 
+			// type
+			c.t = args[0]
+			// remote IP
+			c.ip = args[1]
+			// port
 			port, err := strconv.Atoi(args[2])
 			if err != nil {
-				console.Debug("CONN/START", "Invalid port")
+				console.Warn("CONN/START", "Invalid port")
 				return er
 			}
-			c.port = int16(port)
-
+			c.port = port
+			// keep alive
 			if len(args) > 3 {
 				keep, err := strconv.Atoi(args[3])
 				if err != nil {
-					console.Debug("CONN/START", "Invalid keep alive")
+					console.Warn("CONN/START", "Invalid keep alive")
 					return er
 				}
-				c.keep = int16(keep)
+				c.keep = keep
 			}
+
+			// connect
+			d, err := net.Dial(strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port))
+			if err != nil {
+				console.Warn("CONN/START",
+					"Cannot dial '"+strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port)+"'")
+				return er
+			}
+			c.conn = &d
 
 			status.connections[0] = c
 		} else {
 			// multiple conn
+			c := &connection{}
+
+			// id
 			id, err := strconv.Atoi(args[0])
 			if err != nil {
+				console.Warn("CONN/START", "Invalid port")
 				return er
 			}
-			c := &connection{}
-			c.t, c.ip = args[1], args[2]
-
+			// type
+			c.t = args[1]
+			// remote IP
+			c.ip = args[2]
+			// port
 			port, err := strconv.Atoi(args[3])
 			if err != nil {
+				console.Warn("CONN/START", "Invalid port")
 				return er
 			}
-			c.port = int16(port)
-
+			c.port = port
+			// keep alive
 			if len(args) > 4 {
 				keep, err := strconv.Atoi(args[4])
 				if err != nil {
+					console.Warn("CONN/START", "Invalid keep alive")
 					return er
 				}
-				c.keep = int16(keep)
+				c.keep = keep
 			}
+
+			// connect
+			d, err := net.Dial(strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port))
+			if err != nil {
+				console.Warn("CONN/START",
+					"Cannot dial '"+strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port)+"'")
+				return er
+			}
+			c.conn = &d
 
 			status.connections[id] = c
 		}
 
+		status.st = 3
 		return ok
-
 	}
 
 	// Fallback to OK
 	return ok
 }
-
-// AT+CIPDOMAIN
-// AT+CIPSTART
-// AT+CIPSSLSIZE
-// Description
-// AT+CIPSSLCONF
-// AT+CIPSEND
-// AT+CIPSENDEX
-// AT+CIPSENDBUF
-// AT+CIPBUFRESET
-// AT+CIPBUFSTATUS
-// AT+CIPCHECKSEQ
-// AT+CIPCLOSE
-// AT+CIFSR
-// AT+CIPMUX
-// AT+CIPSERVER
-// AT+CIPSERVERMAXCONN
-// AT+CIPMODE
-// AT+SAVETRANSLINK
-// AT+CIPSTO
-// AT+PING
-// AT+CIUPDATE
-// AT+CIPDINFO
-// AT+IPD
-// AT+CIPRECVMODE
-// AT+CIPRECVDATA
-// AT+CIPRECVLEN
-// AT+CIPSNTPCFG
-// AT+CIPSNTPTIME
-// AT+CIPDNS_CUR
-// AT+CIPDNS_DEF

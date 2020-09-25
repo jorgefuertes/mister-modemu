@@ -1,15 +1,19 @@
 package comm
 
+import "net"
+
 type connection struct {
 	t    string
 	ip   string
-	port int16
-	keep int16
+	port int
+	keep int
+	conn *net.Conn
+	cs   uint8
 }
 
 type st struct {
-	st          int8
-	cipmux      int8
+	st          uint8
+	cipmux      uint8
 	echo        bool
 	connections [5]*connection
 }

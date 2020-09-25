@@ -23,7 +23,6 @@ func ReadLoop() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		console.Debug("CONN/RX", rBuf[0])
 		if rBuf[0] == bs || rBuf[0] == del {
 			if len(cBuf) > 0 {
 				cBuf = cBuf[:len(cBuf)-1]
@@ -49,10 +48,10 @@ func ReadLoop() {
 			}
 		}
 		if cBuf[len(cBuf)-1] == lf || cBuf[len(cBuf)-1] == cr {
-			// _ = cBuf[:len(cBuf)-1]
 			if string(cBuf[0:2]) == "AT" {
 				cmd := bufToStr(&cBuf)
 				res := parseCmd(cmd)
+				console.Debug("CONN/REPLY", res)
 				write(res + "\r\n")
 			}
 			cBuf = []byte{}
