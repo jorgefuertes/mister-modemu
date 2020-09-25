@@ -144,7 +144,7 @@ func parseCmd(cmd string) string {
 		if err != nil {
 			return er
 		}
-		return "+CIFSR:APIP," + ip.String()
+		return "+CIFSR:APIP," + ip.String() + "\r\n" + ok
 	}
 
 	// AT+CIPSTART
