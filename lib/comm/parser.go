@@ -6,9 +6,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jorgefuertes/mister-modemu/lib/cfg"
 	"github.com/jorgefuertes/mister-modemu/lib/console"
+	"github.com/tatsushid/go-fastping"
 )
 
 // one arg line, even if it has colon sep args
@@ -23,10 +25,11 @@ func getArg(cmd *string) string {
 
 // slice of args from colon sep args
 func getArgs(argLine *string) []string {
+	prefix := `AT/CMD/ARG`
 	args := strings.Split(*argLine, ",")
 	for i, a := range args {
 		args[i] = strings.Trim(a, `"`)
-		console.Debug("ARG", args[i])
+		console.Debug(prefix, args[i])
 	}
 
 	return args
@@ -49,7 +52,10 @@ func bufToStr(buf *[]byte) string {
 
 // parser
 func parseCmd(cmd string) string {
-	console.Debug("COMM/PARSE", "'"+cmd+"'")
+	// Log prefix
+	prefix := `AT/PARSER`
+
+	console.Debug(prefix, "'"+cmd+"'")
 
 	// AT
 	if cmd == "AT" {
@@ -58,12 +64,14 @@ func parseCmd(cmd string) string {
 
 	// AT+VERSION
 	if cmd == "AT+VERSION" {
-		return *cfg.Config.Version
+		serialWriteLn("+VERSION:", *cfg.Config.Version)
+		return ok
 	}
 
 	// AT+AUTHOR
 	if cmd == "AT+AUTHOR" {
-		return *cfg.Config.Author
+		serialWriteLn("+AUTHOR:", *cfg.Config.Author)
+		return ok
 	}
 
 	// AT+RST
@@ -74,20 +82,19 @@ func parseCmd(cmd string) string {
 
 	// AT+HELP
 	if cmd == "AT+HELP" {
-		var output string
 		for _, line := range help {
-			output += line + "\r\n"
+			serialWriteLn(line)
 		}
-		return output
+		return ok
 	}
 
 	// ATE
 	if strings.HasPrefix(cmd, "ATE") {
 		if strings.HasSuffix(cmd, "0") {
-			status.echo = false
+			m.echo = false
 			return ok
 		} else if strings.HasSuffix(cmd, "1") {
-			status.echo = true
+			m.echo = true
 			return ok
 		}
 		return er
@@ -95,18 +102,20 @@ func parseCmd(cmd string) string {
 
 	// AT+CIPSTATUS
 	if cmd == "AT+CIPSTATUS" {
-		var output string
-		output += fmt.Sprintf("STATUS:%v", status.st)
-		for i, c := range status.connections {
-			output += fmt.Sprintf("\r\n+CIPSTATUS:%v,%s,%s,%v,%v,%v",
-				i, c.t, c.ip, c.port, 0, c.cs)
+		serialWriteLn(fmt.Sprintf("STATUS:%v", m.status))
+		for i, c := range m.connections {
+			if c != nil {
+				serialWriteLn(
+					fmt.Sprintf("\r\n+CIPSTATUS:%v,%s,%s,%v,%v,%v", i, c.t, c.ip, c.port, 0, c.cs))
+			}
 		}
 
-		return output
+		return hush
 	}
 
 	// AT+CIPDOMAIN
 	if strings.HasPrefix(cmd, "AT+CIPDOMAIN") {
+		prefix = `CIPDOMAIN`
 		name := getArg(&cmd)
 		if name == "" {
 			return er
@@ -116,16 +125,18 @@ func parseCmd(cmd string) string {
 		}
 		ips, err := net.LookupIP(name)
 		if err != nil {
-			console.Debug("DNS/FAIL", err.Error())
+			console.Debug(prefix, err.Error())
 			return "DNS Fail\r\nERROR"
 		}
-		return fmt.Sprintf("+CIPDOMAIN:%s", ips[0])
+		serialWriteLn(fmt.Sprintf("+CIPDOMAIN:%s", ips[0]))
+
+		return ok
 	}
 
 	// AT+CIPMUX
 	if strings.HasPrefix(cmd, "AT+CIPMUX") {
 		if cmd == "AT+CIPMUX?" {
-			return fmt.Sprintf("+CIPMUX:%v\r\nOK", status.cipmux)
+			return fmt.Sprintf("+CIPMUX:%v\r\nOK", m.cipmux)
 		}
 		mode, err := strconv.Atoi(getArg(&cmd))
 		if err != nil {
@@ -134,114 +145,188 @@ func parseCmd(cmd string) string {
 		if mode > 1 || mode < 0 {
 			return er
 		}
-		status.cipmux = uint8(mode)
+		m.cipmux = uint8(mode)
 		return ok
 	}
 
 	// AT+CIFSR - Gets the local IP address
 	if strings.HasPrefix(cmd, "AT+CIFSR") {
+		prefix = `CIFSR`
+
 		ip, err := getLocalIP()
 		if err != nil {
-			console.Error("AT+CIFSR", err.Error())
+			console.Error(prefix, err.Error())
 			return er
 		}
+
 		mac, err := getLocalMac(ip)
 		if err != nil {
-			console.Error("AT+CIFSR", err.Error())
+			console.Error(prefix, err.Error())
 			return er
 		}
-		return fmt.Sprintf(
-			"+CIFSR:APIP,\"%s\"\r\n+CIFSR:APMAC,\"%s\"\r\n+CIFSR:STAIP,\"%s\"\r\n"+
-				"+CIFSR:STAMAC,\"%s\"\r\nOK\r\n",
-			ip.String(), mac.String(), ip.String(), mac.String(),
-		)
+
+		serialWriteLn(fmt.Sprintf("+CIFSR:APIP,\"%s\"", ip.String()))
+		serialWriteLn(fmt.Sprintf("+CIFSR:APMAC,\"%s\"", mac.String()))
+		serialWriteLn(fmt.Sprintf("+CIFSR:STAIP,\"%s\"", ip.String()))
+		serialWriteLn(fmt.Sprintf("+CIFSR:STAMAC,\"%s\"", mac.String()))
+
+		return ok
 	}
 
 	// AT+CIPSTART
 	if strings.HasPrefix(cmd, "AT+CIPSTART") {
+		prefix = `CIPSTART`
 		arg := getArg(&cmd)
 		args := getArgs(&arg)
 
-		if status.cipmux == 0 {
+		var c *connection = &connection{}
+		var id int
+		var err error
+
+		if m.cipmux == 0 {
 			// single conn
-			c := &connection{}
+			id = 0
 
 			// type
-			c.t = args[0]
-			// remote IP
-			c.ip = args[1]
-			// port
-			port, err := strconv.Atoi(args[2])
-			if err != nil {
-				console.Warn("CONN/START", "Invalid port")
+			c.t = strings.ToUpper(args[0])
+			if c.t != "TCP" && c.t != "UDP" {
+				console.Error(prefix, "Unimplemented conn type")
 				return er
 			}
-			c.port = port
+
+			// remote IP
+			c.ip = args[1]
+
+			// port
+			c.port, err = strconv.Atoi(args[2])
+			if err != nil {
+				console.Warn(prefix, "Invalid port")
+				return er
+			}
+
 			// keep alive
 			if len(args) > 3 {
 				keep, err := strconv.Atoi(args[3])
 				if err != nil {
-					console.Warn("CONN/START", "Invalid keep alive")
+					console.Warn(prefix, "Invalid keep alive")
 					return er
 				}
 				c.keep = keep
 			}
-
-			// connect
-			d, err := net.Dial(strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port))
-			if err != nil {
-				console.Warn("CONN/START",
-					"Cannot dial '"+strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port)+"'")
-				return er
-			}
-			c.conn = &d
-
-			status.connections[0] = c
 		} else {
 			// multiple conn
-			c := &connection{}
-
-			// id
-			id, err := strconv.Atoi(args[0])
+			id, err = strconv.Atoi(args[0])
 			if err != nil {
-				console.Warn("CONN/START", "Invalid port")
+				console.Warn(prefix, "Invalid port")
 				return er
 			}
+
 			// type
 			c.t = args[1]
+
 			// remote IP
 			c.ip = args[2]
+
 			// port
-			port, err := strconv.Atoi(args[3])
+			c.port, err = strconv.Atoi(args[3])
 			if err != nil {
-				console.Warn("CONN/START", "Invalid port")
+				console.Warn(prefix, "Invalid port")
 				return er
 			}
-			c.port = port
+
 			// keep alive
 			if len(args) > 4 {
 				keep, err := strconv.Atoi(args[4])
 				if err != nil {
-					console.Warn("CONN/START", "Invalid keep alive")
+					console.Warn(prefix, "Invalid keep alive")
 					return er
 				}
 				c.keep = keep
 			}
-
-			// connect
-			d, err := net.Dial(strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port))
-			if err != nil {
-				console.Warn("CONN/START",
-					"Cannot dial '"+strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port)+"'")
-				return er
-			}
-			c.conn = &d
-
-			status.connections[id] = c
 		}
 
-		status.st = 3
+		// connect
+		c.conn, err = net.Dial(strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port))
+		if err != nil {
+			console.Warn(prefix,
+				"Cannot dial '"+strings.ToLower(c.t), c.ip+":"+strconv.Itoa(c.port)+"'")
+			return er
+		}
+
+		m.connections[id] = c
+		m.status = 3
 		return ok
+	}
+
+	// AT+CIPSEND
+	if strings.HasPrefix(cmd, "AT+CIPSEND") {
+		prefix = `CIPSEND`
+		var connNum int
+		var sndLen int
+		var err error
+
+		arg := getArg(&cmd)
+		args := getArgs(&arg)
+
+		if m.cipmux == 0 {
+			connNum = 0
+			sndLen, err = strconv.Atoi(args[0])
+			if err != nil {
+				console.Warn(prefix, "Invalid param length")
+				return er
+			}
+		} else {
+			if len(args) < 2 {
+				console.Warn(prefix, "Missing link_id")
+				return er
+			}
+			connNum, err := strconv.Atoi(args[0])
+			if err != nil || connNum > 4 {
+				console.Warn(prefix, "Invalid link_id")
+				return er
+			}
+			sndLen, err = strconv.Atoi(args[1])
+			if err != nil {
+				console.Warn(prefix, "Invalid param length")
+				return er
+			}
+		}
+
+		setSnd(uint8(connNum), uint(sndLen))
+
+		console.Debug(prefix,
+			fmt.Sprintf("SEND link %v waiting for %v bytes", m.snd.ID, m.snd.len))
+
+		return ok
+	}
+
+	// AT+PING
+	if strings.HasPrefix(cmd, "AT+PING") {
+		prefix = `CIPSEND`
+		host := getArg(&cmd)
+		if host == "" {
+			return er
+		}
+
+		p := fastping.NewPinger()
+		ra, err := net.ResolveIPAddr("ip4:icmp", host)
+		if err != nil {
+			return er
+		}
+
+		p.AddIPAddr(ra)
+		p.Network("udp")
+		p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
+			serialWriteLn("+", rtt.String())
+			serialWriteLn(ok)
+			p.Stop()
+		}
+
+		err = p.Run()
+		if err != nil {
+			console.Warn("AT/PING", err.Error())
+			return er
+		}
 	}
 
 	// Fallback to OK

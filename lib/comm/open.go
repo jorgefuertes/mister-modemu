@@ -9,21 +9,23 @@ import (
 
 // Open - Open the serial port
 func Open(port *string, baud *int) {
+	prefix := "SER/OPEN"
 	if _, err := os.Stat(*port); os.IsNotExist(err) {
-		console.Error("COMM/OPEN", "Cannot find port ", *port)
+		console.Error(prefix, "Cannot find port ", *port)
 		os.Exit(4)
 	}
-	c := &serial.Config{Name: *port, Baud: *baud}
+	console.Debug(prefix, "Opening serial port")
 	var err error
-	s, err = serial.OpenPort(c)
+	m.port, err = serial.OpenPort(&serial.Config{Name: *port, Baud: *baud})
 	if err != nil {
-		console.Error("COMM/OPEN", err.Error())
+		console.Error(prefix, err.Error())
 		os.Exit(1)
 	}
+	console.Debug(prefix, "Serial port open")
 	resetStatus()
 }
 
 // Close - Closes the port
 func Close() {
-	s.Close()
+	m.port.Close()
 }

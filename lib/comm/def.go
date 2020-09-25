@@ -1,10 +1,9 @@
 package comm
 
-import "github.com/tarm/serial"
-
 // returns
 const ok = `OK`
 const er = `ERROR`
+const hush = `#NO#REPLY#`
 
 // ascii
 const cr = 0x0D
@@ -13,20 +12,19 @@ const sp = 0x20
 const del = 0x7F
 const bs = 0x08
 
-// vars
-var s *serial.Port
-
 var help = []string{
 	`IMPLEMENTED AT COMMANDS:`,
 	`------------------------`,
-	`AT+HELP`,
-	`AT+VERSION`,
-	`AT+AUTHOR`,
-	`AT+RST`,
 	`ATE`,
+	`AT+HELP`,
+	`AT+AUTHOR`,
+	`AT+CIFSR`,
 	`AT+CIPSTATUS`,
 	`AT+CIPDOMAIN`,
 	`AT+CIPMUX`,
 	`AT+CIPSTART`,
-	`AT+CIFSR`,
+	`AT+CIPSNED`,
+	`AT+PING`,
+	`AT+RST`,
+	`AT+VERSION`,
 }
