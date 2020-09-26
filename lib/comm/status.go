@@ -14,7 +14,6 @@ type connection struct {
 	keep int
 	conn net.Conn
 	cs   uint8
-	ch   *chan byte
 }
 
 type modem struct {

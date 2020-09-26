@@ -43,23 +43,23 @@ func SerialReader() {
 				console.Debug(prefix,
 					"SNDBUF[", m.snd.rec, "/", m.snd.len, "]: ", rBuf[i])
 				sBuf = append(sBuf, rBuf[i])
-				if m.snd.rec >= m.snd.len {
+				if m.snd.rec == m.snd.len {
 					console.Debug(prefix, "Data set complete")
 					// data transmission
-					serialWrite(fmt.Sprintf("Rec %v bytes\r\n", m.snd.rec))
+					serialWriteLn(fmt.Sprintf("Rec %v bytes", m.snd.rec))
 					if len(rBuf) > i {
-						serialWrite("BUSY\r\n")
+						serialWriteLn("BUSY")
 					}
-
 					console.Debug(prefix, "Write BEGIN to link ", m.snd.ID)
+					console.Debug(prefix, fmt.Sprintf("Data: %q", sBuf))
 					_, err := m.connections[m.snd.ID].conn.Write(sBuf)
 					if err != nil {
 						console.Error(prefix, err)
-						serialWrite(er, cr, lf)
+						serialWriteLn(er)
 					}
 					console.Debug(prefix, "Write END")
 					clearSnd()
-					serialWrite("SEND OK", cr, lf)
+					serialWriteLn("SEND OK")
 					break
 				}
 			}
@@ -90,7 +90,7 @@ func SerialReader() {
 			cBuf = append(cBuf, rBuf[i])
 			if len(cBuf) > 2048 {
 				console.Error("CONN/RX", "Command buffer limit reached")
-				serialWrite(er)
+				serialWriteLn(er)
 				cBuf = []byte{}
 				break
 			}

@@ -255,6 +255,7 @@ func parseCmd(cmd string) string {
 
 		m.connections[id] = c
 		m.status = 3
+		go listener(id)
 		return ok
 	}
 
