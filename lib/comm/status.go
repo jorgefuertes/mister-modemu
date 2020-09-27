@@ -2,6 +2,7 @@ package comm
 
 import (
 	"net"
+	"sync"
 
 	"github.com/jorgefuertes/mister-modemu/lib/console"
 	"github.com/tarm/serial"
@@ -20,6 +21,7 @@ type modem struct {
 	status      uint8
 	cipmux      uint8
 	echo        bool
+	lock        *sync.Mutex
 	connections [5]*connection
 	snd         struct {
 		ID  uint8
@@ -33,6 +35,7 @@ type modem struct {
 var m modem
 
 func resetStatus() {
+	m.lock.Lock()
 	console.Debug("MODEM/STATUS", "Reseting status")
 	m.status = 5
 	m.cipmux = 0
@@ -44,16 +47,21 @@ func resetStatus() {
 		m.status = 2
 	}
 	m.port.Flush()
+	m.lock.Unlock()
 }
 
 func clearSnd() {
+	m.lock.Lock()
 	m.snd.on = false
 	m.snd.ID = 0
 	m.snd.len = 0
+	m.lock.Unlock()
 }
 
 func setSnd(sndID uint8, sndLen uint) {
+	m.lock.Lock()
 	m.snd.on = true
 	m.snd.ID = sndID
 	m.snd.len = sndLen
+	m.lock.Unlock()
 }

@@ -36,7 +36,10 @@ func getArgs(argLine *string) []string {
 }
 
 func bufToStr(buf *[]byte) string {
-	cmd := strings.TrimSpace(string(*buf))
+	return strings.TrimSpace(string(*buf))
+}
+
+func removeAT(cmd string) string {
 	return strings.TrimPrefix(cmd, "AT+")
 }
 
@@ -45,6 +48,7 @@ func parseCmd(cmd string) string {
 	// Log prefix
 	prefix := `AT/PARSER`
 
+	cmd = removeAT(cmd)
 	console.Debug(prefix, "'"+cmd+"'")
 
 	// AT
