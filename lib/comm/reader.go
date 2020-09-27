@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/jorgefuertes/mister-modemu/lib/cfg"
 	"github.com/jorgefuertes/mister-modemu/lib/console"
@@ -17,9 +16,9 @@ func SerialReader() {
 	prefix := "SER/RX"
 
 	// buffers
-	sBuf := make([]byte, 1, 255) // cipsend buff
-	cBuf := make([]byte, 1, 255) // command buff
-	rBuf := make([]byte, 1, 128) // receiving buff
+	sBuf := make([]byte, 1, 255)   // cipsend buff
+	cBuf := make([]byte, 1, 255)   // command buff
+	rBuf := make([]byte, 128, 256) // receiving buff
 	sBuf = []byte{}
 	cBuf = []byte{}
 
@@ -27,21 +26,16 @@ func SerialReader() {
 	console.Debug(prefix, "Read Loop Begin")
 	for {
 		var eof error
-		var n int
-		n, eof = m.port.Read(rBuf)
+		_, eof = m.port.Read(rBuf)
 		if eof == io.EOF {
 			console.Debug(prefix, `EOF`)
 		} else if eof != nil {
 			console.Error(prefix, eof.Error())
 			continue
 		}
-		if n == 0 {
-			time.Sleep(200 * time.Millisecond)
-			continue
-		}
 		if cfg.IsDev() {
-			for _, d := range rBuf {
-				console.Debug(prefix, fmt.Sprintf("%03d %s", d, util.ByteToStr(d)))
+			for i, d := range rBuf {
+				console.Debug(prefix, fmt.Sprintf("[%03d] %03d %s", i, d, util.ByteToStr(d)))
 			}
 
 		}
@@ -79,10 +73,6 @@ func SerialReader() {
 				}
 			}
 			continue
-		} else {
-			if len(cBuf) == 0 && rBuf[0] == 0x00 {
-				continue
-			}
 		}
 
 		// Delete
@@ -117,7 +107,7 @@ func SerialReader() {
 			}
 
 			// process if finished
-			if d == lf || d == cr {
+			if d == lf {
 				m.port.Flush()
 				console.Debug("BUF/CMD", string(cBuf))
 				if strings.HasPrefix(string(cBuf), `AT`) {

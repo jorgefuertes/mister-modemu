@@ -18,7 +18,7 @@ func ByteToStr(b byte) string {
 	case del:
 		return `DEL`
 	default:
-		if b > 32 && b < 127 {
+		if b >= 32 && b < 127 {
 			return string(b)
 		}
 		return "•"
