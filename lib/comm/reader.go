@@ -72,7 +72,7 @@ func SerialReader() {
 						serialWriteLn(er)
 					}
 					console.Debug(fmt.Sprintf("NET/TX/%v", m.snd.ID), "END")
-					sBuf, cBuf, rBuf = []byte{}, []byte{}, []byte{}
+					sBuf, cBuf = []byte{}, []byte{}
 					clearSnd()
 					serialWriteLn("SEND OK")
 					break
