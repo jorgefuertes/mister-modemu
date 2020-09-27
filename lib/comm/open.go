@@ -23,14 +23,12 @@ func Open(port *string, baud *int) {
 		os.Exit(1)
 	}
 	console.Debug(prefix, "Serial port open")
-	m.lock = new(sync.Mutex)
+	m.params = new(sync.Mutex)
 	resetStatus()
 }
 
 // Close - Closes the port
 func Close() {
-	m.lock.Lock()
 	m.port.Flush()
 	m.port.Close()
-	m.lock.Unlock()
 }

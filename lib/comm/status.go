@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"fmt"
 	"net"
 	"sync"
 
@@ -21,7 +22,7 @@ type modem struct {
 	status      uint8
 	cipmux      uint8
 	echo        bool
-	lock        *sync.Mutex
+	params      *sync.Mutex
 	connections [5]*connection
 	snd         struct {
 		ID  uint8
@@ -35,7 +36,8 @@ type modem struct {
 var m modem
 
 func resetStatus() {
-	m.lock.Lock()
+	m.params.Lock()
+	defer m.params.Unlock()
 	console.Debug("MODEM/STATUS", "Reseting status")
 	m.status = 5
 	m.cipmux = 0
@@ -47,21 +49,22 @@ func resetStatus() {
 		m.status = 2
 	}
 	m.port.Flush()
-	m.lock.Unlock()
 }
 
 func clearSnd() {
-	m.lock.Lock()
+	m.params.Lock()
+	defer m.params.Unlock()
 	m.snd.on = false
 	m.snd.ID = 0
 	m.snd.len = 0
-	m.lock.Unlock()
+	console.Debug("CLEARSND", fmt.Sprintf("ON:%v ID:%v LEN:%v", m.snd.on, m.snd.ID, m.snd.len))
 }
 
 func setSnd(sndID uint8, sndLen uint) {
-	m.lock.Lock()
+	m.params.Lock()
+	defer m.params.Unlock()
 	m.snd.on = true
 	m.snd.ID = sndID
 	m.snd.len = sndLen
-	m.lock.Unlock()
+	console.Debug("SETSND", fmt.Sprintf("ON:%v ID:%v LEN:%v", m.snd.on, m.snd.ID, m.snd.len))
 }
