@@ -23,9 +23,11 @@ func Open(port *string, baud *int) {
 	}
 	console.Debug(prefix, "Serial port open")
 	resetStatus()
+	m.port.Flush()
 }
 
 // Close - Closes the port
 func Close() {
+	m.port.Flush()
 	m.port.Close()
 }

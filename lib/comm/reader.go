@@ -79,6 +79,10 @@ func SerialReader() {
 				}
 			}
 			continue
+		} else {
+			if len(cBuf) == 0 && rBuf[0] == 0x00 {
+				continue
+			}
 		}
 
 		// Delete
