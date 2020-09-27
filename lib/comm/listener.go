@@ -18,7 +18,8 @@ func listener(id int) {
 		n, err = m.connections[id].conn.Read(rBuf)
 		if err != nil {
 			console.Debug(prefix, err)
-			continue
+			console.Warn(prefix, "Finished")
+			break
 		}
 		if n > 0 {
 			console.Debug(prefix, "Received ", n, " bytes")

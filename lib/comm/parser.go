@@ -15,7 +15,7 @@ import (
 
 // one arg line, even if it has colon sep args
 func getArg(cmd *string) string {
-	r := regexp.MustCompile(`^AT\+[A-Z]+\=\"*(?P<Arg>.*)\"*$`)
+	r := regexp.MustCompile(`^[A-Z]+\=\"*(?P<Arg>.*)\"*$`)
 	m := r.FindStringSubmatch(*cmd)
 	if len(m) < 2 {
 		return ""
@@ -36,18 +36,8 @@ func getArgs(argLine *string) []string {
 }
 
 func bufToStr(buf *[]byte) string {
-	var str string
-	for _, b := range *buf {
-		if b == cr || b == lf {
-			break
-		}
-		if b == 0x00 {
-			continue
-		}
-		str += string(b)
-	}
-
-	return str
+	cmd := strings.TrimSpace(string(*buf))
+	return strings.TrimPrefix(cmd, "AT+")
 }
 
 // parser
@@ -63,25 +53,25 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+VERSION
-	if cmd == "AT+VERSION" {
+	if cmd == "VERSION" {
 		serialWriteLn("+VERSION:", *cfg.Config.Version)
 		return ok
 	}
 
 	// AT+AUTHOR
-	if cmd == "AT+AUTHOR" {
+	if cmd == "AUTHOR" {
 		serialWriteLn("+AUTHOR:", *cfg.Config.Author)
 		return ok
 	}
 
 	// AT+RST
-	if cmd == "AT+RST" {
+	if cmd == "RST" {
 		resetStatus()
 		return ok
 	}
 
 	// AT+HELP
-	if cmd == "AT+HELP" {
+	if cmd == "HELP" {
 		for _, line := range help {
 			serialWriteLn(line)
 		}
@@ -101,7 +91,7 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+CIPSTATUS
-	if cmd == "AT+CIPSTATUS" {
+	if cmd == "CIPSTATUS" {
 		serialWriteLn(fmt.Sprintf("STATUS:%v", m.status))
 		for i, c := range m.connections {
 			if c != nil {
@@ -114,7 +104,7 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+CIPDOMAIN
-	if strings.HasPrefix(cmd, "AT+CIPDOMAIN") {
+	if strings.HasPrefix(cmd, "CIPDOMAIN") {
 		prefix = `CIPDOMAIN`
 		name := getArg(&cmd)
 		if name == "" {
@@ -135,7 +125,7 @@ func parseCmd(cmd string) string {
 
 	// AT+CIPMUX
 	if strings.HasPrefix(cmd, "AT+CIPMUX") {
-		if cmd == "AT+CIPMUX?" {
+		if cmd == "CIPMUX?" {
 			return fmt.Sprintf("+CIPMUX:%v\r\nOK", m.cipmux)
 		}
 		mode, err := strconv.Atoi(getArg(&cmd))
@@ -150,7 +140,7 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+CIFSR - Gets the local IP address
-	if strings.HasPrefix(cmd, "AT+CIFSR") {
+	if strings.HasPrefix(cmd, "CIFSR") {
 		prefix = `CIFSR`
 
 		ip, err := getLocalIP()
@@ -174,7 +164,7 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+CIPSTART
-	if strings.HasPrefix(cmd, "AT+CIPSTART") {
+	if strings.HasPrefix(cmd, "CIPSTART") {
 		prefix = `CIPSTART`
 		arg := getArg(&cmd)
 		args := getArgs(&arg)
@@ -260,7 +250,7 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+CIPSEND
-	if strings.HasPrefix(cmd, "AT+CIPSEND") {
+	if strings.HasPrefix(cmd, "CIPSEND") {
 		prefix = `CIPSEND`
 		var connNum int
 		var sndLen int
@@ -270,6 +260,9 @@ func parseCmd(cmd string) string {
 		args := getArgs(&arg)
 
 		if m.cipmux == 0 {
+			if m.connections[0] == nil {
+				return er
+			}
 			connNum = 0
 			sndLen, err = strconv.Atoi(args[0])
 			if err != nil {
@@ -284,6 +277,9 @@ func parseCmd(cmd string) string {
 			connNum, err := strconv.Atoi(args[0])
 			if err != nil || connNum > 4 {
 				console.Warn(prefix, "Invalid link_id")
+				return er
+			}
+			if m.connections[connNum] == nil {
 				return er
 			}
 			sndLen, err = strconv.Atoi(args[1])
@@ -302,8 +298,8 @@ func parseCmd(cmd string) string {
 	}
 
 	// AT+PING
-	if strings.HasPrefix(cmd, "AT+PING") {
-		prefix = `CIPSEND`
+	if strings.HasPrefix(cmd, "PING") {
+		prefix = `PING`
 		host := getArg(&cmd)
 		if host == "" {
 			return er
@@ -328,6 +324,48 @@ func parseCmd(cmd string) string {
 			console.Warn("AT/PING", err.Error())
 			return er
 		}
+	}
+
+	// AT+CIPCLOSE
+	if strings.HasPrefix(cmd, "CIPCLOSE") {
+		if m.cipmux == 0 {
+			if m.connections[0] != nil {
+				m.connections[0].conn.Close()
+				m.connections[0] = nil
+				resetStatus()
+			}
+
+			return ok
+		}
+
+		n, err := strconv.Atoi(getArg(&cmd))
+		if err != nil {
+			return er
+		}
+
+		if n == 5 {
+			for i := 0; i < 5; i++ {
+				if m.connections[i] != nil {
+					m.connections[i].conn.Close()
+					m.connections[i] = nil
+				}
+			}
+			resetStatus()
+
+			return ok
+		}
+
+		if n < 5 {
+			if m.connections[n] != nil {
+				m.connections[n].conn.Close()
+				m.connections[n] = nil
+				resetStatus()
+			}
+
+			return ok
+		}
+
+		return er
 	}
 
 	// Fallback to OK

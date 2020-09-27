@@ -25,7 +25,6 @@ type modem struct {
 		ID  uint8
 		on  bool
 		len uint
-		rec uint
 	}
 	port *serial.Port
 	w    chan []interface{}
@@ -51,12 +50,10 @@ func clearSnd() {
 	m.snd.on = false
 	m.snd.ID = 0
 	m.snd.len = 0
-	m.snd.rec = 0
 }
 
 func setSnd(sndID uint8, sndLen uint) {
 	m.snd.on = true
 	m.snd.ID = sndID
 	m.snd.len = sndLen
-	m.snd.rec = 0
 }
