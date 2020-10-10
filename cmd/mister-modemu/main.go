@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/jorgefuertes/mister-modemu/lib/cfg"
-	"github.com/jorgefuertes/mister-modemu/lib/comm"
-	"github.com/jorgefuertes/mister-modemu/lib/console"
+	"github.com/jorgefuertes/mister-modemu/internal/build"
+	"github.com/jorgefuertes/mister-modemu/internal/cfg"
+	"github.com/jorgefuertes/mister-modemu/internal/comm"
+	"github.com/jorgefuertes/mister-modemu/internal/console"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -23,7 +24,7 @@ func main() {
 		"Serial Speed",
 	).Short('b').Default("115200").Int()
 
-	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(*cfg.Config.Version).Author(*cfg.Config.Author)
+	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(build.Version()).Author(*cfg.Config.Author)
 	kingpin.CommandLine.Help = "Mister Modem Emulator"
 	kingpin.Parse()
 

@@ -3,13 +3,11 @@ package comm
 import (
 	"fmt"
 
-	"github.com/jorgefuertes/mister-modemu/lib/console"
-	"github.com/jorgefuertes/mister-modemu/lib/util"
+	"github.com/jorgefuertes/mister-modemu/internal/console"
+	"github.com/jorgefuertes/mister-modemu/internal/util"
 )
 
 func serialWriteLn(data ...interface{}) (int, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
 	n, err := serialWrite(data...)
 	serialWrite(cr, lf)
 	return n, err
@@ -17,9 +15,6 @@ func serialWriteLn(data ...interface{}) (int, error) {
 
 func serialWriteBytes(b *[]byte) (int, error) {
 	prefix := `SER/TX`
-
-	m.lock.Lock()
-	defer m.lock.Unlock()
 
 	console.Debug(prefix, fmt.Sprintf("Sending %v bytes to serial port", len(*b)))
 	n, err := m.port.Write(*b)
@@ -33,9 +28,6 @@ func serialWriteBytes(b *[]byte) (int, error) {
 
 func serialWrite(data ...interface{}) (int, error) {
 	prefix := `SER/TX`
-
-	m.lock.Lock()
-	defer m.lock.Unlock()
 
 	var err error
 	var bytes int

@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/jorgefuertes/mister-modemu/lib/console"
+	"github.com/jorgefuertes/mister-modemu/internal/console"
 	"github.com/tarm/serial"
 )
 
@@ -24,13 +24,11 @@ func Open(port *string, baud *int) {
 	}
 	console.Debug(prefix, "Serial port open")
 	m.params = new(sync.Mutex)
-	m.lock = new(sync.Mutex)
 	resetStatus()
 }
 
 // Close - Closes the port
 func Close() {
-	m.lock.Unlock()
 	m.port.Flush()
 	m.port.Close()
 }

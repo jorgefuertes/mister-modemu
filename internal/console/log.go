@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jorgefuertes/mister-modemu/lib/cfg"
+	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 )
 
 // Info - Log info line

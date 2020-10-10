@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jorgefuertes/mister-modemu/lib/cfg"
-	"github.com/jorgefuertes/mister-modemu/lib/console"
-	"github.com/jorgefuertes/mister-modemu/lib/util"
+	"github.com/jorgefuertes/mister-modemu/internal/build"
+	"github.com/jorgefuertes/mister-modemu/internal/cfg"
+	"github.com/jorgefuertes/mister-modemu/internal/console"
+	"github.com/jorgefuertes/mister-modemu/internal/util"
 	"github.com/tatsushid/go-fastping"
 )
 
@@ -65,7 +66,7 @@ func parseAT(cmd string) string {
 
 	// AT+VERSION
 	if cmd == "VERSION" {
-		serialWriteLn("+VERSION:", *cfg.Config.Version)
+		serialWriteLn("+VERSION:", build.Version())
 		return ok
 	}
 

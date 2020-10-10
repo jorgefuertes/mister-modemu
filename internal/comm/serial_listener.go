@@ -3,8 +3,8 @@ package comm
 import (
 	"fmt"
 
-	"github.com/jorgefuertes/mister-modemu/lib/console"
-	"github.com/jorgefuertes/mister-modemu/lib/util"
+	"github.com/jorgefuertes/mister-modemu/internal/console"
+	"github.com/jorgefuertes/mister-modemu/internal/util"
 )
 
 // SerialListener - Listener
@@ -12,6 +12,9 @@ func SerialListener() {
 	prefix := "SER/LST"
 	b := make([]byte, 1024, 1024) // receiving buffer
 	for {
+		if m.snd.on {
+			serialWrite(">")
+		}
 		n, err := m.port.Read(b)
 		if err != nil {
 			console.Warn(prefix, err.Error())

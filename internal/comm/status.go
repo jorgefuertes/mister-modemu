@@ -5,7 +5,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/jorgefuertes/mister-modemu/lib/console"
+	"github.com/jorgefuertes/mister-modemu/internal/console"
 	"github.com/tarm/serial"
 )
 
@@ -28,9 +28,9 @@ type modem struct {
 		ID  uint8
 		on  bool
 		len uint
+		lst bool
 	}
 	port *serial.Port
-	lock *sync.Mutex
 }
 
 var m modem
@@ -38,8 +38,6 @@ var m modem
 func resetStatus() {
 	m.params.Lock()
 	defer m.params.Unlock()
-	m.lock.Lock()
-	defer m.lock.Unlock()
 	console.Debug("MODEM/STATUS", "Reseting status")
 	m.status = 5
 	m.cipmux = 0
