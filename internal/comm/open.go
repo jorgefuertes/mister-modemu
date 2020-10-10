@@ -2,7 +2,6 @@ package comm
 
 import (
 	"os"
-	"sync"
 
 	"github.com/jorgefuertes/mister-modemu/internal/console"
 	"github.com/tarm/serial"
@@ -23,7 +22,6 @@ func Open(port *string, baud *int) {
 		os.Exit(1)
 	}
 	console.Debug(prefix, "Serial port open")
-	m.params = new(sync.Mutex)
 	resetStatus()
 }
 

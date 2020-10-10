@@ -21,7 +21,7 @@ func listener(id int) {
 			console.Warn(prefix, "Finished")
 			break
 		}
-		if n > 0 {
+		if n > 0 && !m.snd.on {
 			cut := netBuf[0:n]
 			console.Debug(prefix, "Received ", n, " bytes")
 			console.Debug(prefix, cut[0], "…", cut[n-1])

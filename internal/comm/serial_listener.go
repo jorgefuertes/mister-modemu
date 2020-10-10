@@ -24,12 +24,12 @@ func SerialListener() {
 			continue
 		}
 
-		go console.Debug(prefix, n, " bytes: ", util.BufToDebug(b, n))
+		console.Debug(prefix, n, " bytes: ", util.BufToDebug(b, n))
 		if m.snd.on {
-			go recData(b, n)
+			recData(b, n)
 		} else {
-			go serialEcho(b, n)
-			go parse(b, n)
+			serialEcho(b, n)
+			parse(b, n)
 		}
 	}
 }
@@ -70,8 +70,8 @@ func recData(b []byte, n int) {
 			return
 		}
 
-		go console.Debug("SER/RX/LINK", fmt.Sprintf("Data set not complete with %v bytes", n))
-		setSndLen(m.snd.len - uint(n))
+		console.Debug("SER/RX/LINK", fmt.Sprintf("Data set not complete with %v bytes", n))
+		m.snd.len -= uint(n)
 		_, err := m.connections[m.snd.ID].conn.Write(b[0:n])
 		if err != nil {
 			console.Error("LINK/TX", err)

@@ -306,7 +306,7 @@ func parseAT(cmd string) string {
 		console.Debug(prefix,
 			fmt.Sprintf("SEND link %v waiting for %v bytes", m.snd.ID, m.snd.len))
 
-		return hush
+		return ok
 	}
 
 	// AT+PING
