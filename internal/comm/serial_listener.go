@@ -22,9 +22,12 @@ func SerialListener() {
 		}
 
 		go console.Debug(prefix, n, " bytes: ", util.BufToDebug(b, n))
-		go serialEcho(b, n)
-		go recData(b, n)
-		go parse(b, n)
+		if m.snd.on {
+			go recData(b, n)
+		} else {
+			go serialEcho(b, n)
+			go parse(b, n)
+		}
 	}
 }
 

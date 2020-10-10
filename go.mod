@@ -8,8 +8,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/tatsushid/go-fastping v0.0.0-20160109021039-d7bb493dee3e
-	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0 // indirect
-	golang.org/x/sys v0.0.0-20201008064518-c1f3e3309c71 // indirect
+	golang.org/x/net v0.0.0-20201009032441-dbdefad45b89 // indirect
+	golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

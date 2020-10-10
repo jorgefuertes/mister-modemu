@@ -30,7 +30,7 @@ type modem struct {
 		len uint
 	}
 	port *serial.Port
-	w    chan []interface{}
+	lock *sync.Mutex
 }
 
 var m modem
@@ -38,6 +38,8 @@ var m modem
 func resetStatus() {
 	m.params.Lock()
 	defer m.params.Unlock()
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	console.Debug("MODEM/STATUS", "Reseting status")
 	m.status = 5
 	m.cipmux = 0

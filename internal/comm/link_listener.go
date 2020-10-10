@@ -15,7 +15,9 @@ func listener(id int) {
 	prefix := fmt.Sprintf("NET/LISTEN/%v", id)
 	console.Debug(prefix, "Listening…")
 	for {
+		m.lock.Unlock()
 		n, err = m.connections[id].conn.Read(netBuf)
+		m.lock.Lock()
 		if err != nil {
 			console.Debug(prefix, err)
 			console.Warn(prefix, "Finished")
