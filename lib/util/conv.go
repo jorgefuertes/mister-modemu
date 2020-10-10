@@ -1,5 +1,9 @@
 package util
 
+import (
+	"fmt"
+)
+
 // ascii
 const cr = 0x0D
 const lf = 0x0A
@@ -10,17 +14,40 @@ const bs = 0x08
 func ByteToStr(b byte) string {
 	switch b {
 	case lf:
-		return `LF`
+		return `[lf]`
 	case cr:
-		return `CR`
+		return `[cr]`
 	case bs:
-		return `BS`
+		return `[bs]`
 	case del:
-		return `DEL`
+		return `[dlt]`
 	default:
 		if b >= 32 && b < 127 {
 			return string(b)
 		}
-		return "•"
+		return fmt.Sprintf("[%x]", b)
 	}
+}
+
+// BufToStr - Transform byte buffer to trimmed string
+func BufToStr(b *[]byte, n int) string {
+	var s string
+	for i, v := range *b {
+		if v > 31 && v < 126 {
+			s += string(v)
+		}
+		if i == n-1 {
+			break
+		}
+	}
+	return s
+}
+
+// BufToDebug - Buffer to debug string
+func BufToDebug(b []byte, n int) string {
+	var s string
+	for i := 0; i < n; i++ {
+		s += ByteToStr(b[i])
+	}
+	return s
 }

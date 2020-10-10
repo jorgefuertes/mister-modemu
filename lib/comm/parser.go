@@ -10,8 +10,19 @@ import (
 
 	"github.com/jorgefuertes/mister-modemu/lib/cfg"
 	"github.com/jorgefuertes/mister-modemu/lib/console"
+	"github.com/jorgefuertes/mister-modemu/lib/util"
 	"github.com/tatsushid/go-fastping"
 )
+
+func parse(b []byte, n int) {
+	cmd := util.BufToStr(&b, n)
+	if strings.HasPrefix(cmd, "AT") {
+		res := parseAT(cmd)
+		if res != hush {
+			serialWriteLn(res)
+		}
+	}
+}
 
 // one arg line, even if it has colon sep args
 func getArg(cmd *string) string {
@@ -35,16 +46,12 @@ func getArgs(argLine *string) []string {
 	return args
 }
 
-func bufToStr(buf *[]byte) string {
-	return strings.TrimSpace(string(*buf))
-}
-
 func removeAT(cmd string) string {
 	return strings.TrimPrefix(cmd, "AT+")
 }
 
-// parser
-func parseCmd(cmd string) string {
+// at parser
+func parseAT(cmd string) string {
 	// Log prefix
 	prefix := `AT/PARSER`
 
@@ -298,7 +305,7 @@ func parseCmd(cmd string) string {
 		console.Debug(prefix,
 			fmt.Sprintf("SEND link %v waiting for %v bytes", m.snd.ID, m.snd.len))
 
-		return ok
+		return hush
 	}
 
 	// AT+PING

@@ -41,7 +41,7 @@ func resetStatus() {
 	console.Debug("MODEM/STATUS", "Reseting status")
 	m.status = 5
 	m.cipmux = 0
-	m.echo = true
+	m.echo = false
 	_, err := getLocalIP()
 	if err != nil {
 		m.status = 5
@@ -67,4 +67,10 @@ func setSnd(sndID uint8, sndLen uint) {
 	m.snd.ID = sndID
 	m.snd.len = sndLen
 	console.Debug("SETSND", fmt.Sprintf("ON:%v ID:%v LEN:%v", m.snd.on, m.snd.ID, m.snd.len))
+}
+
+func setSndLen(n uint) {
+	m.params.Lock()
+	defer m.params.Unlock()
+	m.snd.len = n
 }

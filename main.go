@@ -37,5 +37,5 @@ func main() {
 
 	comm.Open(cfg.Config.Port, cfg.Config.Baud)
 	defer comm.Close()
-	comm.SerialReader()
+	comm.SerialListener()
 }
