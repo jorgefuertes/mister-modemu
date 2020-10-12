@@ -277,10 +277,7 @@ func parseAT(m *Modem, cmd string) string {
 	// AT+CIPSEND
 	if cmd == "CIPSEND" {
 		prefix = "CIPSEND"
-		m.snd.id = uint8(0)
-		m.snd.len = uint(0)
-		m.snd.on = true
-		m.snd.ts = false
+		m.setSndPacket()
 		console.Debug(prefix,
 			fmt.Sprintf("SEND link %v transparent packet mode ON", m.snd.id))
 

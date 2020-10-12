@@ -21,6 +21,7 @@ func (m *Modem) init() {
 // clearSnd - clear the send status
 func (m *Modem) clearSnd() {
 	m.snd.on = false
+	m.snd.ts = false
 	m.snd.id = 0
 	m.snd.len = 0
 }
@@ -30,4 +31,12 @@ func (m *Modem) setSnd(sndID uint8, sndLen uint) {
 	m.snd.on = true
 	m.snd.id = sndID
 	m.snd.len = sndLen
+}
+
+// SetSndPacket - sets the transparent packet mode
+func (m *Modem) setSndPacket() {
+	m.snd.on = true
+	m.snd.ts = true
+	m.snd.id = 0
+	m.snd.len = 0
 }

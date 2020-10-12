@@ -25,7 +25,11 @@ func (m *Modem) Listen() {
 
 		console.Debug(prefix, m.n, " bytes: ", m.bufToDebug())
 		if m.snd.on {
-			m.recData()
+			if m.snd.ts {
+				m.recPacket()
+			} else {
+				m.recData()
+			}
 		} else {
 			m.echo()
 			m.parse()
@@ -41,41 +45,64 @@ func (m *Modem) echo() {
 
 func (m *Modem) recData() {
 	prefix := "SER/RX/LINK"
-	// if we are waiting for data to send via remote
-	if m.snd.on {
-		console.Debug(prefix, "CIPSEND is on")
-		for i := 0; i <= m.n; i++ {
-			console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
-		}
-		if uint(m.n) > m.snd.len {
-			m.writeLn("BUSY")
-		}
+	// len bytes mode
+	console.Debug(prefix, "CIPSEND ON (len bytes mode)")
+	for i := 0; i <= m.n; i++ {
+		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
+	}
+	if uint(m.n) > m.snd.len {
+		m.writeLn("BUSY")
+	}
 
-		// data complete
-		if uint(m.n) >= m.snd.len {
-			console.Debug("SER/RX/LINK", fmt.Sprintf("Data set complete with %v bytes", m.snd.len))
-			// data transmission
-			m.writeLn(fmt.Sprintf("Rec %v bytes", m.snd.len))
-			_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.snd.len])
-			if err != nil {
-				console.Error("LINK/TX", err)
-				m.writeLn(er)
-			} else {
-				console.Debug("LINK/TX", m.snd.len, " bytes sent to remote")
-				m.writeLn("SEND OK")
-			}
-			m.clearSnd()
-			return
-		}
-
-		console.Debug("SER/RX/LINK", fmt.Sprintf("Data set not complete with %v bytes", m.n))
-		m.snd.len -= uint(m.n)
-		_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.n])
+	// data complete
+	if uint(m.n) >= m.snd.len {
+		console.Debug("SER/RX/LINK", fmt.Sprintf("Data set complete with %v bytes", m.snd.len))
+		// data transmission
+		m.writeLn(fmt.Sprintf("Rec %v bytes", m.snd.len))
+		_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.snd.len])
 		if err != nil {
 			console.Error("LINK/TX", err)
 			m.writeLn(er)
 		} else {
-			console.Debug("LINK/TX", m.n, " bytes sent to remote")
+			console.Debug("LINK/TX", m.snd.len, " bytes sent to remote")
+			m.writeLn("SEND OK")
 		}
+		m.clearSnd()
+		return
+	}
+
+	console.Debug("SER/RX/LINK", fmt.Sprintf("Data set not complete with %v bytes", m.n))
+	m.snd.len -= uint(m.n)
+	_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.n])
+	if err != nil {
+		console.Error("LINK/TX", err)
+		m.writeLn(er)
+	} else {
+		console.Debug("LINK/TX", m.n, " bytes sent to remote")
+	}
+}
+
+func (m *Modem) recPacket() {
+	prefix := "SER/RX/LINK"
+	// packet mode
+	console.Debug(prefix, "CIPSEND ON (packet mode)")
+	for i := 0; i <= m.n; i++ {
+		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
+	}
+
+	if m.bufToStr() == "+++" {
+		// back to command mode
+		console.Debug(prefix, "Return to command mode")
+		m.clearSnd()
+		m.writeLn(ok)
+		return
+	}
+
+	_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.snd.len])
+	if err != nil {
+		console.Error("LINK/TX", err)
+		m.writeLn(er)
+	} else {
+		console.Debug("LINK/TX", m.n, " bytes sent to remote")
 	}
 }
