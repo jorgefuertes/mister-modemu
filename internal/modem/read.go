@@ -86,7 +86,7 @@ func (m *Modem) recPacket() {
 	prefix := "SER/RX/LINK"
 	// packet mode
 	console.Debug(prefix, "CIPSEND ON (packet mode)")
-	for i := 0; i <= m.n; i++ {
+	for i := 0; i < m.n; i++ {
 		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
 	}
 
@@ -98,7 +98,7 @@ func (m *Modem) recPacket() {
 		return
 	}
 
-	_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.snd.len])
+	_, err := m.connections[m.snd.id].conn.Write(m.b[0 : m.n-1])
 	if err != nil {
 		console.Error("LINK/TX", err)
 		m.writeLn(er)
