@@ -1,4 +1,4 @@
-package comm
+package modem
 
 import (
 	"fmt"
@@ -11,16 +11,17 @@ import (
 	"github.com/jorgefuertes/mister-modemu/internal/build"
 	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
-	"github.com/jorgefuertes/mister-modemu/internal/util"
 	"github.com/tatsushid/go-fastping"
 )
 
-func parse(b []byte, n int) {
-	cmd := util.BufToStr(&b, n)
+// parse entry func
+// does nothing if buffer doesn't start with AT
+func (m *Modem) parse() {
+	cmd := m.bufToStr()
 	if strings.HasPrefix(cmd, "AT") {
-		res := parseAT(cmd)
+		res := parseAT(m, cmd)
 		if res != hush {
-			serialWriteLn(res)
+			m.writeLn(res)
 		}
 	}
 }
@@ -52,7 +53,7 @@ func removeAT(cmd string) string {
 }
 
 // at parser
-func parseAT(cmd string) string {
+func parseAT(m *Modem, cmd string) string {
 	// Log prefix
 	prefix := `AT/PARSER`
 
@@ -66,37 +67,54 @@ func parseAT(cmd string) string {
 
 	// AT+VERSION
 	if cmd == "VERSION" {
-		serialWriteLn("+VERSION:", build.Version())
-		return ok
+		return "+VERSION:" + build.Version() + crlf + ok
 	}
 
 	// AT+AUTHOR
 	if cmd == "AUTHOR" {
-		serialWriteLn("+AUTHOR:", *cfg.Config.Author)
-		return ok
+		return "+AUTHOR:" + *cfg.Config.Author + crlf + ok
 	}
 
 	// AT+RST
 	if cmd == "RST" {
-		resetStatus()
+		m.init()
 		return ok
 	}
 
 	// AT+HELP
 	if cmd == "HELP" {
+		var s string
 		for _, line := range help {
-			serialWriteLn(line)
+			s += line + crlf
 		}
-		return ok
+		return s + ok
+	}
+
+	// AT+HELP GAMES
+	if cmd == "HELP GAMES" {
+		var s string
+		for _, line := range helpGames {
+			s += line + crlf
+		}
+		return s + ok
+	}
+
+	// AT+HELP GAMES
+	if cmd == "LIST GAMES" {
+		var s string
+		for _, line := range listGames {
+			s += line + crlf
+		}
+		return s + ok
 	}
 
 	// ATE
 	if strings.HasPrefix(cmd, "ATE") {
 		if strings.HasSuffix(cmd, "0") {
-			m.echo = false
+			m.ate = false
 			return ok
 		} else if strings.HasSuffix(cmd, "1") {
-			m.echo = true
+			m.ate = true
 			return ok
 		}
 		return er
@@ -104,20 +122,19 @@ func parseAT(cmd string) string {
 
 	// AT+CIPSTATUS
 	if cmd == "CIPSTATUS" {
-		serialWriteLn(fmt.Sprintf("STATUS:%v", m.status))
+		s := fmt.Sprintf("STATUS:%v", m.status)
 		for i, c := range m.connections {
 			if c != nil {
-				serialWriteLn(
-					fmt.Sprintf("\r\n+CIPSTATUS:%v,%s,%s,%v,%v,%v", i, c.t, c.ip, c.port, 0, c.cs))
+				s += fmt.Sprintf("\r\n+CIPSTATUS:%v,%s,%s,%v,%v,%v",
+					i, c.t, c.ip, c.port, 0, c.cs) + crlf
 			}
 		}
 
-		return hush
+		return s
 	}
 
 	// AT+CIPDOMAIN
 	if strings.HasPrefix(cmd, "CIPDOMAIN") {
-		prefix = `CIPDOMAIN`
 		name := getArg(&cmd)
 		if name == "" {
 			return er
@@ -127,12 +144,9 @@ func parseAT(cmd string) string {
 		}
 		ips, err := net.LookupIP(name)
 		if err != nil {
-			console.Debug(prefix, err.Error())
 			return "DNS Fail\r\nERROR"
 		}
-		serialWriteLn(fmt.Sprintf("+CIPDOMAIN:%s", ips[0]))
-
-		return ok
+		return fmt.Sprintf("+CIPDOMAIN:%s", ips[0]) + crlf + ok
 	}
 
 	// AT+CIPMUX
@@ -153,8 +167,7 @@ func parseAT(cmd string) string {
 
 	// AT+CIFSR - Gets the local IP address
 	if strings.HasPrefix(cmd, "CIFSR") {
-		prefix = `CIFSR`
-
+		prefix := "PARSER/CIFSR"
 		ip, err := getLocalIP()
 		if err != nil {
 			console.Error(prefix, err.Error())
@@ -167,23 +180,22 @@ func parseAT(cmd string) string {
 			return er
 		}
 
-		serialWriteLn(fmt.Sprintf("+CIFSR:APIP,\"%s\"", ip.String()))
-		serialWriteLn(fmt.Sprintf("+CIFSR:APMAC,\"%s\"", mac.String()))
-		serialWriteLn(fmt.Sprintf("+CIFSR:STAIP,\"%s\"", ip.String()))
-		serialWriteLn(fmt.Sprintf("+CIFSR:STAMAC,\"%s\"", mac.String()))
-
-		return ok
+		return fmt.Sprintf("+CIFSR:APIP,\"%s\"\r\n", ip.String()) +
+			fmt.Sprintf("+CIFSR:APMAC,\"%s\"\r\n", mac.String()) +
+			fmt.Sprintf("+CIFSR:STAIP,\"%s\"\r\n", ip.String()) +
+			fmt.Sprintf("+CIFSR:STAMAC,\"%s\"\r\n", mac.String()) +
+			ok
 	}
 
 	// AT+CIPSTART
 	if strings.HasPrefix(cmd, "CIPSTART") {
-		prefix = `CIPSTART`
+		prefix = `PARSER/CIPSTART`
 		arg := getArg(&cmd)
 		args := getArgs(&arg)
 
 		var c *connection = &connection{}
-		var id int
 		var err error
+		var id int
 
 		if m.cipmux == 0 {
 			// single conn
@@ -257,13 +269,27 @@ func parseAT(cmd string) string {
 
 		m.connections[id] = c
 		m.status = 3
-		go listener(id)
+		// start listener
+		go m.listenLink(uint8(id))
 		return ok
 	}
 
 	// AT+CIPSEND
+	if cmd == "CIPSEND" {
+		prefix = "CIPSEND"
+		m.snd.id = uint8(0)
+		m.snd.len = uint(0)
+		m.snd.on = true
+		m.snd.ts = false
+		console.Debug(prefix,
+			fmt.Sprintf("SEND link %v transparent packet mode ON", m.snd.id))
+
+		return ok
+	}
+
+	// AT+CIPSEND=<params>
 	if strings.HasPrefix(cmd, "CIPSEND") {
-		prefix = `CIPSEND`
+		prefix = `CIPSEND2`
 		var connNum int
 		var sndLen int
 		var err error
@@ -301,10 +327,13 @@ func parseAT(cmd string) string {
 			}
 		}
 
-		setSnd(uint8(connNum), uint(sndLen))
+		m.snd.id = uint8(connNum)
+		m.snd.len = uint(sndLen)
+		m.snd.on = true
+		m.snd.ts = false
 
 		console.Debug(prefix,
-			fmt.Sprintf("SEND link %v waiting for %v bytes", m.snd.ID, m.snd.len))
+			fmt.Sprintf("SEND link %v waiting for %v bytes", m.snd.id, m.snd.len))
 
 		return ok
 	}
@@ -326,8 +355,8 @@ func parseAT(cmd string) string {
 		p.AddIPAddr(ra)
 		p.Network("udp")
 		p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
-			serialWriteLn("+", rtt.String())
-			serialWriteLn(ok)
+			m.writeLn("+", rtt.String())
+			m.writeLn(ok)
 			p.Stop()
 		}
 
@@ -344,7 +373,7 @@ func parseAT(cmd string) string {
 			if m.connections[0] != nil {
 				m.connections[0].conn.Close()
 				m.connections[0] = nil
-				resetStatus()
+				m.init()
 			}
 
 			return ok
@@ -362,7 +391,7 @@ func parseAT(cmd string) string {
 					m.connections[i] = nil
 				}
 			}
-			resetStatus()
+			m.init()
 
 			return ok
 		}
@@ -371,7 +400,7 @@ func parseAT(cmd string) string {
 			if m.connections[n] != nil {
 				m.connections[n].conn.Close()
 				m.connections[n] = nil
-				resetStatus()
+				m.init()
 			}
 
 			return ok

@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/jorgefuertes/mister-modemu/internal/build"
 	"github.com/jorgefuertes/mister-modemu/internal/cfg"
-	"github.com/jorgefuertes/mister-modemu/internal/comm"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
+	"github.com/jorgefuertes/mister-modemu/internal/modem"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -36,7 +36,8 @@ func main() {
 
 	console.Info("CFG/PORT/BAUD", *cfg.Config.Port, " ", *cfg.Config.Baud)
 
-	comm.Open(cfg.Config.Port, cfg.Config.Baud)
-	defer comm.Close()
-	comm.SerialListener()
+	m := &modem.Modem{}
+	m.Open(cfg.Config.Port, cfg.Config.Baud)
+	defer m.Close()
+	m.Listen()
 }

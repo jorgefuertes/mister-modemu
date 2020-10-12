@@ -1,19 +1,20 @@
-package comm
+package modem
 
 import (
 	"fmt"
 
 	"github.com/jorgefuertes/mister-modemu/internal/console"
-	"github.com/jorgefuertes/mister-modemu/internal/util"
 )
 
-func serialWriteLn(data ...interface{}) (int, error) {
-	n, err := serialWrite(data...)
-	serialWrite(cr, lf)
-	return n, err
+// WriteLn - write a line on serial
+func (m *Modem) writeLn(data ...interface{}) (int, error) {
+	n, err := m.write(data...)
+	m.write(cr, lf)
+	return n + 2, err
 }
 
-func serialWriteBytes(b *[]byte) (int, error) {
+// WriteBytes - write a byte array on serial
+func (m *Modem) writeBytes(b *[]byte) (int, error) {
 	prefix := `SER/TX`
 
 	console.Debug(prefix, fmt.Sprintf("Sending %v bytes to serial port", len(*b)))
@@ -26,7 +27,8 @@ func serialWriteBytes(b *[]byte) (int, error) {
 	return n, err
 }
 
-func serialWrite(data ...interface{}) (int, error) {
+// Write - write interfaces on serial
+func (m *Modem) write(data ...interface{}) (int, error) {
 	prefix := `SER/TX`
 
 	var err error
@@ -38,19 +40,19 @@ func serialWrite(data ...interface{}) (int, error) {
 		case nil:
 			console.Debug(prefix, "Not sending nil")
 		case int:
-			console.Debug(prefix, util.ByteToStr(byte(v)))
+			console.Debug(prefix, byteToStr(byte(v)))
 			b, err = m.port.Write([]byte{byte(v)})
 		case uint:
-			console.Debug(prefix, util.ByteToStr(byte(v)))
+			console.Debug(prefix, byteToStr(byte(v)))
 			b, err = m.port.Write([]byte{byte(v)})
 		case byte:
-			console.Debug(prefix, util.ByteToStr(v))
+			console.Debug(prefix, byteToStr(v))
 			b, err = m.port.Write([]byte{v})
 		case string:
 			console.Debug(prefix, v)
 			b, err = m.port.Write([]byte(v))
 		case []byte:
-			serialWriteBytes(&v)
+			m.writeBytes(&v)
 		default:
 			err = fmt.Errorf("I don't know how to write this: %q(%t)", d, d)
 		}

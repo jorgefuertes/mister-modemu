@@ -39,6 +39,7 @@ then
     exit 1
 fi
 
+ssh $MISTER rm "${DEST}/mister-modemu*" &> /dev/null
 scp bin/$o "${MISTER}:${DEST}/mister-modemu.tmp"
 ssh $MISTER mv "${DEST}/mister-modemu.tmp" "${DEST}/${o}"
 ssh $MISTER "${DEST}/${o} -e dev"
