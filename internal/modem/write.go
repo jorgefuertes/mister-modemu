@@ -29,7 +29,7 @@ func (m *Modem) writeBytes(b *[]byte) (int, error) {
 
 // Write - write interfaces on serial
 func (m *Modem) write(data ...interface{}) (int, error) {
-	prefix := `SER/TX`
+	prefix := `SER/TX/WRITE`
 
 	var err error
 	var bytes int

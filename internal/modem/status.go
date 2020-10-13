@@ -16,6 +16,12 @@ func (m *Modem) init() {
 		m.port.Flush()
 	}
 	m.clearSnd()
+	// Closing connections
+	for _, c := range m.connections {
+		if c != nil {
+			c.close = true
+		}
+	}
 }
 
 // clearSnd - clear the send status

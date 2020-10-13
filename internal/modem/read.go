@@ -47,6 +47,16 @@ func (m *Modem) recData() {
 	prefix := "SER/RX/LINK"
 	// len bytes mode
 	console.Debug(prefix, "CIPSEND ON (len bytes mode)")
+	// cheking for ATE0, that will be a lost connection or a reseted computer
+	if string(m.b[0:4]) == `ATE0` && m.snd.len != 5 {
+		// let's guess its a reset
+		m.init()
+		// simulate ATE0
+		m.ate = false
+		m.writeLn(ok)
+		return
+	}
+
 	for i := 0; i <= m.n; i++ {
 		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
 	}

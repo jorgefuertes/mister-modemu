@@ -22,6 +22,7 @@ func (m *Modem) listenLink(id uint8) {
 		// Check if close on
 		if m.connections[id].close {
 			console.Debug(prefix, "Closing")
+			m.connections[id] = nil
 			break
 		}
 		// Set timeout
