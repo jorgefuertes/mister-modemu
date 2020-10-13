@@ -50,6 +50,7 @@ func (m *Modem) recData() {
 	// cheking for ATE0, that will be a lost connection or a reseted computer
 	if string(m.b[0:4]) == `ATE0` && m.snd.len != 5 {
 		// let's guess its a reset
+		console.Debug(prefix, "Unexpected ATE0: Guessing a computer's RESET")
 		m.init()
 		// simulate ATE0
 		m.ate = false
