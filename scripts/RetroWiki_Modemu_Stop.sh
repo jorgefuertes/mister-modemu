@@ -12,10 +12,13 @@ _______________________________________________________
 
 BANNER
 
-BINDIR="/media/fat/retrowiki-bin"
+EXENAME="mister-modemu"
+echo -n "Killing ${EXENAME}..."
+if [[ $? -eq 0 ]]
+then
+      echo "OK"
+else
+      echo "FAIL"
+fi
 
-echo "Making retrowiki-bin dir"
-mkdir -p $BINDIR
-echo "Checking for latest release"
-LATEST_URI=$(curl -s https://github.com/jorgefuertes/mister-modemu/releases/latest)
-echo "Latest is: ${LATEST}"
+sleep 1

@@ -25,7 +25,7 @@ else
 	done
 fi
 
-scp scripts/RetroWiki_Modemu.sh root@$MISTER_IP:/media/fat/scripts/.
+scp scripts/RetroWiki_Modemu*.sh root@$MISTER_IP:/media/fat/scripts/.
 if [[ $? -eq 0 ]]
 then
 	echo "OK"

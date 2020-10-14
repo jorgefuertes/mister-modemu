@@ -29,22 +29,6 @@ fi
 
 DEST="/media/fat/retrowiki-bin"
 
-if [[ -f .build ]]
-then
-	BUILD=$(cat .build)
-else
-	BUILD=0
-fi
-BUILD=$(($BUILD + 1))
-echo $BUILD > .build
-
-FLAGS="-s -w \
-	-X 'github.com/jorgefuertes/mister-modemu/build.version=${VER}' \
-	-X 'github.com/jorgefuertes/mister-modemu/build.user=${WHO}' \
-	-X 'github.com/jorgefuertes/mister-modemu/build.time=${TIME}' \
-	-X 'github.com/jorgefuertes/mister-modemu/build.number=${BUILD}' \
-"
-
 mkdir -p bin
 rm -f bin/$EXE_NAME*
 

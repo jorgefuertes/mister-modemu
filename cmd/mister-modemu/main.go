@@ -37,6 +37,9 @@ func main() {
 		os.Exit(0)
 	}
 
+	fmt.Println(cfg.Banner)
+	fmt.Println(build.Version() + "\n")
+
 	if cfg.IsDev() {
 		console.Warn("CFG/ENV", "Development mode ON")
 	} else {
@@ -46,7 +49,11 @@ func main() {
 	console.Info("CFG/PORT/BAUD", *cfg.Config.Port, " ", *cfg.Config.Baud)
 
 	m := &modem.Modem{}
-	m.Open(cfg.Config.Port, cfg.Config.Baud)
+	if err := m.Open(cfg.Config.Port, cfg.Config.Baud); err != nil {
+		console.Error("SER/OPEN", err.Error())
+		console.Error("SER/OPEN", "Cannot open serial port!")
+		os.Exit(1)
+	}
 	defer m.Close()
 	m.Listen()
 }
