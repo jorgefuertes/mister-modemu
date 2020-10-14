@@ -1,28 +1,12 @@
 #!/usr/bin/env bash
 
-EXE_NAME="mister-modemu"
-VER=$(git describe --tags --contains)
-
-WHO=$(whoami)
-TIME=$(date +"%d-%m-%Y@%H:%M:%S")
-OS_LIST=(darwin linux)
-ARCH_LIST=(amd64 arm arm64)
-
-if [[ -f .build ]]
+if [[ "$0" != *scripts/*.sh ]]
 then
-	BUILD=$(cat .build)
-else
-	BUILD=0
+	echo "Please, execute from project's root directory"
+	exit 1
 fi
-BUILD=$(($BUILD + 1))
-echo $BUILD > .build
 
-FLAGS="-s -w \
-	-X 'github.com/jorgefuertes/mister-modemu/build.version=${VER}' \
-	-X 'github.com/jorgefuertes/mister-modemu/build.user=${WHO}' \
-	-X 'github.com/jorgefuertes/mister-modemu/build.time=${TIME}' \
-	-X 'github.com/jorgefuertes/mister-modemu/build.number=${BUILD}' \
-"
+source scripts/build_common.inc.sh
 
 mkdir -p bin
 rm -f bin/$EXE_NAME*
@@ -36,7 +20,9 @@ do
 			echo "Refusing to build ${i}/${j}"
 		else
 	        echo "Building ${i} ${j}"
-	        GOOS=$i GOARCH=$j go build -ldflags="${FLAGS}" -o "bin/${EXE_NAME}_${VER}-${i}_${j}"
+	        GOOS=$i GOARCH=$j go build -ldflags "${FLAGS}" \
+				-o "bin/${EXE_NAME}_${VER}-${i}_${j}" \
+				cmd/mister-modemu/main.go
 	        if [[ $? -ne 0 ]]
 	        then
 	            echo "Compilation error!"

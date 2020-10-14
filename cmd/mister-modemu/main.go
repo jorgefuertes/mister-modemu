@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/jorgefuertes/mister-modemu/internal/build"
 	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
@@ -25,8 +28,14 @@ func main() {
 	).Short('b').Default("115200").Int()
 
 	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(build.Version()).Author(*cfg.Config.Author)
-	kingpin.CommandLine.Help = "Mister Modem Emulator"
+	kingpin.CommandLine.Help = "RetroWiki Mister ESP8266 AT Modem Emulator"
+	v := kingpin.Flag("short_version", "Show short versión string and exit").Short('v').Default("false").Bool()
 	kingpin.Parse()
+
+	if *v {
+		fmt.Println(build.VersionShort())
+		os.Exit(0)
+	}
 
 	if cfg.IsDev() {
 		console.Warn("CFG/ENV", "Development mode ON")

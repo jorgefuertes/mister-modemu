@@ -12,3 +12,8 @@ func Version() string {
 	return fmt.Sprintf("%s compiled at %s by %s (build #%s)",
 		version, time, user, number)
 }
+
+// VersionShort - short version string
+func VersionShort() string {
+	return version
+}

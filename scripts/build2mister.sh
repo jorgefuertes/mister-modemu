@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-if [[ "$0" != *scripts/build2mister.sh ]]
+if [[ "$0" != *scripts/*.sh ]]
 then
 	echo "Please, execute from project's root directory"
 	exit 1
 fi
+
+source scripts/build_common.inc.sh
 
 if [[ -f .mister_ip ]]
 then
@@ -25,12 +27,7 @@ else
 	done
 fi
 
-EXE_NAME="mister-modemu"
-VER=$(git describe --tags --contains)
-DEST="/media/fat"
-
-WHO=$(whoami)
-TIME=$(date +"%d-%m-%Y@%H:%M:%S")
+DEST="/media/fat/retrowiki-bin"
 
 if [[ -f .build ]]
 then
@@ -53,17 +50,16 @@ rm -f bin/$EXE_NAME*
 
 i="linux"
 j="arm"
-o="${EXE_NAME}_${VER}-${i}_${j}"
 
 echo "Building ${i} ${j}"
-GOOS=$i GOARCH=$j go build -o bin/$o cmd/mister-modemu/main.go
+GOOS=$i GOARCH=$j go build -ldflags $FLAGS -o bin/$EXE_NAME cmd/mister-modemu/main.go
 if [[ $? -ne 0 ]]
 then
     echo "Compilation error!"
     exit 1
 fi
 
-ssh root@$MISTER_IP rm "${DEST}/mister-modemu*" &> /dev/null
-scp bin/$o "root@${MISTER_IP}:${DEST}/mister-modemu.tmp"
-ssh root@$MISTER_IP mv "${DEST}/mister-modemu.tmp" "${DEST}/${o}"
-ssh root@$MISTER_IP "${DEST}/${o} -e dev"
+ssh root@$MISTER_IP rm "${DEST}/${EXE_NAME}" &> /dev/null
+scp bin/$EXE_NAME "root@${MISTER_IP}:${DEST}/modemu.tmp"
+ssh root@$MISTER_IP mv "${DEST}/${EXE_NAME}.tmp" "${DEST}/${EXE_NAME}"
+ssh root@$MISTER_IP "${DEST}/${EXE_NAME} -e dev"
