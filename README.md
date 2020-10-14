@@ -50,3 +50,5 @@ That's all.
 - Select the `RetroWiki_Modemu_Start` script. This script knows how to install, run and update this modem emulator.
 - Now you can load ZXNext's core and browse to `demos`.
 - Execute `NXTel` and connect to any service.
+
+Enjoy!
