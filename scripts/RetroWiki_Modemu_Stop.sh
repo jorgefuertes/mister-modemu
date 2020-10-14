@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo <<BANNER
+echo "
  ______         __               ________ __ __     __
 |   __ \.-----.|  |_.----.-----.|  |  |  |__|  |--.|__|
 |      <|  -__||   _|   _|  _  ||  |  |  |  |    < |  |
@@ -10,15 +10,22 @@ _______________________________________________________
       ESP8266 AT Modem Emulator for ZX-Next core
 _______________________________________________________
 
-BANNER
+"
 
 EXENAME="mister-modemu"
+
+pidof $EXENAME > /dev/null
+if [[ $? -ne 0 ]]
+then
+      echo "$EXENAME its not running"
+      exit 1
+fi
+
 echo -n "Killing ${EXENAME}..."
+killall $EXENAME
 if [[ $? -eq 0 ]]
 then
       echo "OK"
 else
       echo "FAIL"
 fi
-
-sleep 1

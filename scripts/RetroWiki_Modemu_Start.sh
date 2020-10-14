@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo <<BANNER
+echo "
  ______         __               ________ __ __     __
 |   __ \.-----.|  |_.----.-----.|  |  |  |__|  |--.|__|
 |      <|  -__||   _|   _|  _  ||  |  |  |  |    < |  |
@@ -10,7 +10,7 @@ _______________________________________________________
       ESP8266 AT Modem Emulator for ZX-Next core
 _______________________________________________________
 
-BANNER
+"
 
 BINDIR="/media/fat/retrowiki-bin"
 EXENAME="mister-modemu"
