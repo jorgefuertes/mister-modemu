@@ -16,6 +16,14 @@ BINDIR="/media/fat/retrowiki-bin"
 EXENAME="mister-modemu"
 GHAPI="https://api.github.com/repos/jorgefuertes/mister-modemu"
 
+pidof $EXENAME &> /dev/null
+if [[ $? -eq 0 ]]
+then
+      echo "mister-modemu is already running!"
+      echo "Please stop it before"
+      exit 1
+fi
+
 echo "Making retrowiki-bin dir"
 mkdir -p $BINDIR
 echo -n "Local release..."
