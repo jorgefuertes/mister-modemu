@@ -17,10 +17,10 @@ check() {
 
 echo -n "Start script..."
 curl -kLs -o $BINDIR/$STARTSCRIPT $GHSCRIPTS/$STARTSCRIPT
-check($?)
+check $?
 
 echo -n "Stop script..."
 curl -kLs -o $BINDIR/$STOPSCRIPT $GHSCRIPTS/$STOPSCRIPT
-check($?)
+check $?
 
 echo "Modemu installed, use Scripts menu to launch or stop it"
