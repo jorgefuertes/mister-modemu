@@ -52,14 +52,26 @@ i="linux"
 j="arm"
 
 echo "Building ${i} ${j}"
-GOOS=$i GOARCH=$j go build -ldflags $FLAGS -o bin/$EXE_NAME cmd/mister-modemu/main.go
+GOOS=$i GOARCH=$j go build -ldflags "${FLAGS}" \
+	-o "bin/${EXE_NAME}_${VER}-${i}_${j}" \
+	cmd/mister-modemu/main.go
 if [[ $? -ne 0 ]]
 then
     echo "Compilation error!"
     exit 1
 fi
 
+rm -f dist/* &> /dev/null
+cp "bin/${EXE_NAME}_${VER}-${i}_${j}" "dist/${EXE_NAME}_${VER}-${i}_${j}"
+pushd dist
+gzip "${EXE_NAME}_${VER}-${i}_${j}"
+echo "RELEASE:"
+ls -la *.gz
+popd
+
+echo "Copying to mister at ${MISTER_IP}"
+ssh root@$MISTER_IP mkdir -p $DEST
 ssh root@$MISTER_IP rm "${DEST}/${EXE_NAME}" &> /dev/null
-scp bin/$EXE_NAME "root@${MISTER_IP}:${DEST}/modemu.tmp"
+scp "bin/${EXE_NAME}_${VER}-${i}_${j}" "root@${MISTER_IP}:${DEST}/${EXE_NAME}.tmp"
 ssh root@$MISTER_IP mv "${DEST}/${EXE_NAME}.tmp" "${DEST}/${EXE_NAME}"
 ssh root@$MISTER_IP "${DEST}/${EXE_NAME} -e dev"

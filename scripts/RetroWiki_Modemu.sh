@@ -12,3 +12,10 @@ _______________________________________________________
 
 BANNER
 
+BINDIR="/media/fat/retrowiki-bin"
+
+echo "Making retrowiki-bin dir"
+mkdir -p $BINDIR
+echo "Checking for latest release"
+LATEST_URI=$(curl -s https://github.com/jorgefuertes/mister-modemu/releases/latest)
+echo "Latest is: ${LATEST}"
