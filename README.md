@@ -47,8 +47,8 @@ That's all.
 
 - Navigate to Mister's system menu, pressing `ESC` at the core's menu.
 - Select `Scripts`, and `Yes` to continue.
-- Select the `RetroWiki_Modemu_Start` script. This script knows how to install, run and update this modem emulator.
-- Now you can load ZXNext's core and browse to `demos`.
-- Execute `NXTel` and connect to any service.
+- Select the `RetroWiki_Modemu_Start` script. This script knows how to install, run and update this modem emulator. Press `ENTER` to close the console when modemu is listening.
+- You can load ZXNext's core now and browse to `demos`.
+- Execute `NXTel` program and connect to any service.
 
 Enjoy!
