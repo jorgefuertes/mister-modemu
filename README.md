@@ -11,7 +11,7 @@ _______________________________________________________
 
 ## What is
 
-This is a modem emulator to be instaled into a
+This is a modem emulator to be installed into a
 [Mister FPGA board](https://misterfpga.org).
 
 It allows ZX-Next, or any other core that can use a serial port and
@@ -31,7 +31,7 @@ smoothly to connect with Next's Videotex sites.
 
 ## Recommended
 
-- Latest [NXTel release](https://github.com/Threetwosevensixseven/NXtel/releases).
+- Latest [NXTel release](https://github.com/Threetwosevensixseven/NXtel/releases). Versions under 1.0.0.251 may freeze.
 
 ## Installation
 
