@@ -33,7 +33,9 @@ type connection struct {
 type Modem struct {
 	status      uint8 // modem status
 	cipmux      uint8 // cipmux status
+	cipinfo     bool  // Shows the Remote IP and Port with +IPD
 	ate         bool  // echo on/off
+	cw          uint8 // cwmode (1: Station, 2: SoftAP, 3: SoftAP+Station)
 	connections [5]*connection
 	// cipsend structure
 	snd struct {

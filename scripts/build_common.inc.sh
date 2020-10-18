@@ -1,11 +1,16 @@
 EXE_NAME="mister-modemu"
 git describe --tags --contains &> /dev/null
-if [[ $? -ne 0 ]]
+if [[ $? -eq 0 ]]
 then
-	echo "Cannot get version tag, please check git status"
-	exit 1
+	VER=$(git describe --tags --contains)
+else
+	VER=$(git describe --tags)
+	if [[ $? -ne 0 ]]
+	then
+		echo "Cannot get version tag, please check git status"
+		exit 1
+	fi
 fi
-VER=$(git describe --tags --contains)
 echo "Version: ${VER}"
 
 WHO=$(whoami)

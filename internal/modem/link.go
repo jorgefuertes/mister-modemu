@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
 )
 
@@ -44,15 +45,37 @@ func (m *Modem) listenLink(id uint8) {
 			}
 		}
 		// Something received?
+		// (+CIPMUX=0)+IPD,<len>[,<remote IP>,<remote port>]:<data>
+		// (+CIPMUX=1)+IPD,<link ID>,<len>[,<remote IP>,<remote port>]:<data>
 		console.Debug(prefix, "Received ", n, " bytes")
 		if n > 0 {
 			cut := b[0:n]
-			if m.cipmux == 0 {
-				res = fmt.Sprintf("+IPD,%v:", n)
-			} else {
-				res = fmt.Sprintf("+IPD,%v,%v:", id, n)
+			if cfg.IsDev() {
+				// Debug received data
+				var count int
+				var hex string
+				var str string
+				for i := 0; i < n; i++ {
+					count++
+					hex += fmt.Sprintf("%02X ", cut[i])
+					str += byteToStr(cut[i])
+					if count == 15 || i == n-1 {
+						console.Debug(prefix, hex, "| ", str)
+						count = 0
+						hex = ""
+						str = ""
+					}
+				}
 			}
-			m.write(res)
+			if m.cipmux == 0 {
+				res = fmt.Sprintf("+IPD,%v", n)
+			} else {
+				res = fmt.Sprintf("+IPD,%v,%v", id, n)
+			}
+			if m.cipinfo {
+				res += fmt.Sprintf(",%s,%v", m.connections[id].ip, m.connections[id].port)
+			}
+			m.write(res + ":")
 			m.writeBytes(&cut)
 			m.write(cr, lf)
 			console.Debug(prefix, "EOT")

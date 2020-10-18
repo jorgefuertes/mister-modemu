@@ -59,10 +59,10 @@ func (m *Modem) recData() {
 	}
 
 	for i := 0; i <= m.n; i++ {
+		if uint(i) == m.snd.len {
+			m.writeLn("BUSY")
+		}
 		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
-	}
-	if uint(m.n) > m.snd.len {
-		m.writeLn("BUSY")
 	}
 
 	// data complete

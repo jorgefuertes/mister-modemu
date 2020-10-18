@@ -4,6 +4,7 @@ package modem
 func (m *Modem) init() {
 	m.status = 5
 	m.cipmux = 0
+	m.cw = 1
 	m.ate = false
 	_, err := getLocalIP()
 	if err != nil {

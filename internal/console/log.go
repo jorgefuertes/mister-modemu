@@ -47,5 +47,6 @@ func Log(level string, prefix string, data ...interface{}) {
 	default:
 		prefix = fmt.Sprintf("ℹ [%s]", prefix)
 	}
+	log.SetFlags(0)
 	log.Println(prefix, fmt.Sprint(data...))
 }

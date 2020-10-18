@@ -28,8 +28,9 @@ func (m *Modem) parse() {
 
 // one arg line, even if it has colon sep args
 func getArg(cmd *string) string {
-	r := regexp.MustCompile(`^[A-Z]+\=\"*(?P<Arg>.*)\"*$`)
+	r := regexp.MustCompile(`^[A-Z_]+\=\"*(?P<Arg>.*)\"*$`)
 	m := r.FindStringSubmatch(*cmd)
+	console.Debug("ARG", m)
 	if len(m) < 2 {
 		return ""
 	}
@@ -404,6 +405,34 @@ func parseAT(m *Modem, cmd string) string {
 		}
 
 		return er
+	}
+
+	// AT+CWMODE_DEF and AT+CWMODE_CUR
+	if strings.HasPrefix(cmd, "CWMODE_") {
+		prefix = `CWMODE`
+
+		// Query
+		if strings.HasSuffix(cmd, "?") {
+			return fmt.Sprintf("+CWMODE_CUR:%v\r\nOK", m.cw)
+		}
+
+		// Set
+		arg := getArg(&cmd)
+		mode, err := strconv.Atoi(arg)
+		if err != nil {
+			console.Warn(prefix, err.Error())
+			return er
+		}
+		m.cw = uint8(mode)
+		return ok
+	}
+
+	// AT+CIPDINFO=<0|1>
+	if strings.HasPrefix(cmd, "CIPDINFO") {
+		prefix = "CIPDINFO"
+		m.cipinfo = (getArg(&cmd) == "1")
+		console.Debug(prefix, m.cipinfo)
+		return ok
 	}
 
 	// Fallback to OK
