@@ -57,9 +57,9 @@ func (m *Modem) listenLink(id uint8) {
 				var str string
 				for i := 0; i < n; i++ {
 					count++
-					hex += fmt.Sprintf("%02X ", cut[i])
+					hex += fmt.Sprintf("%02X", cut[i])
 					str += byteToStr(cut[i])
-					if count == 15 || i == n-1 {
+					if count == 20 || i == n-1 {
 						console.Debug(prefix, hex, "| ", str)
 						count = 0
 						hex = ""
