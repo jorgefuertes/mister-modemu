@@ -1,75 +1,140 @@
 package modem
 
 import (
+	"fmt"
 	"net"
+	"regexp"
 
+	"github.com/jorgefuertes/mister-modemu/internal/console"
 	"github.com/tarm/serial"
 )
 
-// returns
-const ok = `OK`
-const er = `ERROR`
-const hush = `#NO#REPLY#`
-
-// ascii
-const cr = 0x0D  // carriage return
-const lf = 0x0A  // line feed
-const sp = 0x20  // space
-const del = 0x7F // delete
-const bs = 0x08  // backspace
-const crlf string = string(cr) + string(lf)
-
+// inet links
 type connection struct {
-	t     string   // type
-	ip    string   // remote IP
-	port  int      // remote port
-	keep  int      // keep alive
-	conn  net.Conn // connection
-	cs    int      // cipstatus
-	close bool     // mark to close
+	ID     uint8    // Connection ID 0-4
+	T      string   // type
+	IP     string   // remote IP
+	Port   int      // remote port
+	Keep   int      // keep alive
+	conn   net.Conn // connection
+	Cs     int      // cipstatus
+	Closed bool     // mark to close
+	b      []byte   // link buffer
+	n      int      // n bytes recv
 }
 
-// Modem object
-type Modem struct {
-	status      uint8 // modem status
-	cipmux      uint8 // cipmux status
-	cipinfo     bool  // Shows the Remote IP and Port with +IPD
-	ate         bool  // echo on/off
-	cw          uint8 // cwmode (1: Station, 2: SoftAP, 3: SoftAP+Station)
-	connections [5]*connection
-	// cipsend structure
-	snd struct {
-		id  uint8 // connection id
-		on  bool  // on/off
-		ts  bool  // Transparent mode on/off
+type route struct {
+	path string         // Command path
+	e    *regexp.Regexp // Regexp
+	cb   func(s *Status)
+}
+
+type parser struct {
+	routes []route
+	Cmd    string
+	Err    error
+}
+
+// Status - general modem status
+type Status struct {
+	Sta     uint8 // modem status
+	CipMux  bool  // status (false: one, true: multiple)
+	CipInfo bool  // true to show the Remote IP and Port with +IPD
+	Ate     bool  // echo on/off
+	Cw      uint8 // cwmode (1: Station, 2: SoftAP, 3: SoftAP+Station)
+	cipsend struct {
+		on  bool  // cipsend on/off
+		id  uint8 // connection ID
+		ts  bool  // transparent mode on/off
 		len uint  // expected len
 	}
-	port *serial.Port // serial port
-	b    []byte       // serial port buffer
-	n    int          // n bytes received at serial port
+	Connections [5]*connection // Internet connections
+	port        *serial.Port   // serial port
+	b           []byte         // serial port buffer
+	n           int            // n bytes received at serial port
+	Parser      *parser        // AT Parser
 }
 
-// wargames help
-var help = []string{`HELP NOT AVAILABLE`}
-var helpGames = []string{
-	`'GAMES' REFERS TO MODELS, SIMULATIONS, AND GAMES WICH HAVE ` +
-		`TACTICAL AND STRATEGIC APPLICATIONS.`,
+func (s *Status) init() {
+	console.Debug(`STATUS/GENERAL`, "Initializing")
+	s.Reset()
 }
-var listGames = []string{
-	`FALKEN'S MAZE`,
-	`BLACK JACK`,
-	`GIN RUMMY`,
-	`HEARTS`,
-	`BRIDGE`,
-	`CHECKERS`,
-	`CHESS`,
-	`POKER`,
-	`FIGHTER COMBAT`,
-	`GUERRILLA ENGAGEMENT`,
-	`DESERT WARFARE`,
-	`AIR-TO-GROUND ACTIONS`,
-	`THEATERWIDE TACTICAL WARFARE`,
-	`THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE`,
-	``,
-	`GLOBAL THERMONUCLEAR WAR`,
+
+// Reset - modem reset
+func (s *Status) Reset() {
+	console.Debug(`STATUS/GENERAL`, "Reset")
+	// modem state
+	s.Ate = false
+	s.Sta = 2
+	s.CipMux = false
+	s.Cw = 1
+	// buffer
+	s.b = make([]byte, 2048, 2048)
+	s.n = 0
+	s.CipClearAll()
+	// port
+	if s.port != nil {
+		s.port.Flush()
+	}
+	// links
+	for _, c := range s.Connections {
+		c.conn.Close()
+		c.Closed = true
+	}
+}
+
+// CipClear - clear the send status for ID
+func (s *Status) CipClear(id uint8) {
+	if s.cipsend.id != id {
+		return
+	}
+	console.Debug(fmt.Sprintf("LINK/CLEAR/%v", id), "Clear CIPSEND status")
+	s.CipClearAll()
+}
+
+// CipClearAll - clear the send status for any its ID
+func (s *Status) CipClearAll() {
+	s.cipsend.id = 0
+	s.cipsend.on = false
+	s.cipsend.ts = false
+	s.cipsend.len = 0
+	console.Debug("LINK/CLEAR/0", "CIPSEND status cleared")
+}
+
+// CipSet - sets the send len metadata
+func (s *Status) CipSet(id uint8, len uint) error {
+	_, err := s.GetConn(id)
+	if err != nil {
+		return err
+	}
+	s.cipsend.on = true
+	s.cipsend.id = id
+	s.cipsend.len = len
+	console.Debug(fmt.Sprintf("LINK/SET/%d", id), fmt.Sprintf("ID: %d, LEN: %v, ON", id, len))
+	return nil
+}
+
+// CipPacketOn - sets the transparent packet mode on
+func (s *Status) CipPacketOn() error {
+	_, err := s.GetConn(0)
+	if err != nil {
+		return err
+	}
+	s.cipsend.on = true
+	s.cipsend.id = 0
+	s.cipsend.ts = true
+	s.cipsend.len = 0
+	console.Debug("LINK/PACKET/0", "Packet mode: ON")
+	return nil
+}
+
+// CipClose - close a link
+func (s *Status) CipClose(id uint8) error {
+	c, err := s.GetConn(id)
+	if err != nil {
+		return err
+	}
+
+	c.close()
+	return nil
 }

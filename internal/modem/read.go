@@ -3,117 +3,130 @@ package modem
 import (
 	"fmt"
 
+	"github.com/jorgefuertes/mister-modemu/internal/ascii"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
 )
 
 // Listen - listen neverending loop
-func (m *Modem) Listen() {
-	prefix := "SER/LST"
+func (s *Status) Listen() {
+	prefix := `SER/LST`
 	var err error
 	for {
-		if m.snd.on {
-			m.write(">")
+		if s.cipsend.on {
+			s.Write(">")
 		}
-		m.n, err = m.port.Read(m.b)
+		s.n, err = s.port.Read(s.b)
 		if err != nil {
 			console.Warn(prefix, err.Error())
 			continue
 		}
-		if m.n < 1 {
+		if s.n < 1 {
 			continue
 		}
 
-		console.Debug(prefix, m.n, " bytes: ", m.bufToDebug())
-		if m.snd.on {
-			if m.snd.ts {
-				m.recPacket()
+		console.Debug(prefix, s.n, " bytes: ", s.bufToDebug())
+		if s.cipsend.on {
+			if s.cipsend.ts {
+				s.recPacket()
 			} else {
-				m.recData()
+				s.recData()
 			}
 		} else {
-			m.echo()
-			m.parse()
+			s.echo()
+			// PARSE HERE !!!
 		}
 	}
 }
 
-func (m *Modem) echo() {
-	if m.ate && !m.snd.on {
-		m.write(m.b[0:m.n])
+func (s *Status) echo() {
+	if s.Ate && !s.cipsend.on {
+		s.Write(s.b[0:s.n])
 	}
 }
 
-func (m *Modem) recData() {
-	prefix := "SER/RX/LINK"
+func (s *Status) recData() {
+	prefix := `SER/RDATA`
 	// len bytes mode
 	console.Debug(prefix, "CIPSEND ON (len bytes mode)")
 	// cheking for ATE0, that will be a lost connection or a reseted computer
-	if string(m.b[0:4]) == `ATE0` && m.snd.len != 5 {
+	if string(s.b[0:4]) == `ATE0` && s.cipsend.len != 5 {
 		// let's guess its a reset
 		console.Debug(prefix, "Unexpected ATE0: Guessing a computer's RESET")
-		m.init()
+		s.Reset()
 		// simulate ATE0
-		m.ate = false
-		m.writeLn(ok)
+		s.Ate = false
+		s.WriteLn(ascii.OK)
 		return
 	}
 
-	for i := 0; i <= m.n; i++ {
-		if uint(i) == m.snd.len {
-			m.writeLn("BUSY")
+	for i := 0; i <= s.n; i++ {
+		if uint(i) == s.cipsend.len {
+			s.WriteLn("BUSY")
 		}
-		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
+		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, s.b[i], ascii.ByteToStr(s.b[i])))
+	}
+
+	// get connection
+	c, err := s.GetConn(s.cipsend.id)
+	if err != nil {
+		console.Error(prefix, err)
+		s.WriteLn(ascii.ER)
 	}
 
 	// data complete
-	if uint(m.n) >= m.snd.len {
-		console.Debug("SER/RX/LINK", fmt.Sprintf("Data set complete with %v bytes", m.snd.len))
+	if uint(s.n) >= s.cipsend.len {
+		console.Debug(prefix, fmt.Sprintf("Data set complete with %v bytes", s.cipsend.len))
 		// data transmission
-		m.writeLn(fmt.Sprintf("Rec %v bytes", m.snd.len))
-		_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.snd.len])
-		if err != nil {
-			console.Error("LINK/TX", err)
-			m.writeLn(er)
+		s.WriteLn(fmt.Sprintf("Rec %v bytes", s.cipsend.len))
+		if _, err = c.conn.Write(s.b[0:s.cipsend.len]); err != nil {
+			console.Error(prefix, err)
+			s.WriteLn(ascii.ER)
 		} else {
-			console.Debug("LINK/TX", m.snd.len, " bytes sent to remote")
-			m.writeLn("SEND OK")
+			console.Debug(prefix, s.cipsend.len, " bytes sent to remote")
+			s.WriteLn("SEND OK")
 		}
-		m.clearSnd()
+
+		s.CipClearAll()
 		return
 	}
 
-	console.Debug("SER/RX/LINK", fmt.Sprintf("Data set not complete with %v bytes", m.n))
-	m.snd.len -= uint(m.n)
-	_, err := m.connections[m.snd.id].conn.Write(m.b[0:m.n])
-	if err != nil {
-		console.Error("LINK/TX", err)
-		m.writeLn(er)
+	console.Debug(prefix, fmt.Sprintf("Data set not complete with %v bytes", s.n))
+	s.cipsend.len -= uint(s.n)
+	if _, err = c.conn.Write(s.b[0:s.n]); err != nil {
+		console.Error(prefix, err)
+		s.WriteLn(ascii.ER)
 	} else {
-		console.Debug("LINK/TX", m.n, " bytes sent to remote")
+		console.Debug(prefix, s.n, " bytes sent to remote")
 	}
 }
 
-func (m *Modem) recPacket() {
-	prefix := "SER/RX/LINK"
+func (s *Status) recPacket() {
+	prefix := `SER/RPACKET`
 	// packet mode
 	console.Debug(prefix, "CIPSEND ON (packet mode)")
-	for i := 0; i < m.n; i++ {
-		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, m.b[i], byteToStr(m.b[i])))
+	for i := 0; i < s.n; i++ {
+		console.Debug(prefix, fmt.Sprintf("%04d: %02X %s", i, s.b[i], ascii.ByteToStr(s.b[i])))
 	}
 
-	if m.bufToStr() == "+++" {
+	if s.bufToStr() == "+++" {
 		// back to command mode
 		console.Debug(prefix, "Return to command mode")
-		m.clearSnd()
-		m.writeLn(ok)
+		s.CipClearAll()
+		s.WriteLn(ascii.OK)
 		return
 	}
 
-	_, err := m.connections[m.snd.id].conn.Write(m.b[0 : m.n-1])
+	// get connection
+	c, err := s.GetConn(s.cipsend.id)
 	if err != nil {
-		console.Error("LINK/TX", err)
-		m.writeLn(er)
+		console.Error(prefix, err)
+		s.WriteLn(ascii.ER)
+	}
+
+	if _, err = c.conn.Write(s.b[0 : s.n-1]); err != nil {
+		console.Error(prefix, err)
+		s.WriteLn(ascii.ER)
 	} else {
-		console.Debug("LINK/TX", m.n, " bytes sent to remote")
+		console.Debug(prefix, s.n, " bytes sent to remote")
 	}
 }

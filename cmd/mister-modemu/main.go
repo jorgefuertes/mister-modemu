@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jorgefuertes/mister-modemu/internal/at"
 	"github.com/jorgefuertes/mister-modemu/internal/build"
 	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
@@ -48,12 +49,17 @@ func main() {
 
 	console.Info("CFG/PORT/BAUD", *cfg.Config.Port, " ", *cfg.Config.Baud)
 
-	m := &modem.Modem{}
+	// modem init
+	m := new(modem.Status)
 	if err := m.Open(cfg.Config.Port, cfg.Config.Baud); err != nil {
 		console.Error("SER/OPEN", err.Error())
 		console.Error("SER/OPEN", "Cannot open serial port!")
 		os.Exit(1)
 	}
 	defer m.Close()
+
+	// routes setup
+	at.Esp8266(m)
+
 	m.Listen()
 }

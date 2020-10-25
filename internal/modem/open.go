@@ -8,15 +8,15 @@ import (
 )
 
 // Open - Open the serial port
-func (m *Modem) Open(port *string, baud *int) error {
+func (s *Status) Open(port *string, baud *int) error {
 	prefix := "SER/OPEN"
 	if _, err := os.Stat(*port); os.IsNotExist(err) {
 		return err
 	}
 	console.Debug(prefix, "Opening serial port")
-	m.init()
+	s.Reset()
 	var err error
-	m.port, err = serial.OpenPort(&serial.Config{Name: *port, Baud: *baud})
+	s.port, err = serial.OpenPort(&serial.Config{Name: *port, Baud: *baud})
 	if err != nil {
 		return err
 	}
