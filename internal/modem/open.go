@@ -21,6 +21,8 @@ func (s *Status) Open(port *string, baud *int) error {
 		return err
 	}
 	console.Debug(prefix, "Serial port open")
+	s.sconf.port = port
+	s.sconf.baud = baud
 
 	return nil
 }

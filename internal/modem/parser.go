@@ -48,7 +48,7 @@ func (p *parser) Parse(m *Status, cmd string) {
 		}
 	}
 
-	console.Debug(`AT/PARSER`, "Not matching route, writing OK by default")
+	console.Debug(`AT/PARSER`, "No matching route, writing OK by default")
 	m.OK()
 }
 

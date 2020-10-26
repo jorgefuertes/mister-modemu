@@ -50,9 +50,13 @@ type Status struct {
 	}
 	Connections [5]*connection // Internet connections
 	port        *serial.Port   // serial port
-	b           []byte         // serial port buffer
-	n           int            // n bytes received at serial port
-	Parser      *parser        // AT Parser
+	sconf       struct {
+		port *string // serial port string
+		baud *int    // speed
+	}
+	b      []byte  // serial port buffer
+	n      int     // n bytes received at serial port
+	Parser *parser // AT Parser
 }
 
 func (s *Status) init() {
@@ -78,8 +82,14 @@ func (s *Status) Reset() {
 	}
 	// links
 	for _, c := range s.Connections {
-		c.conn.Close()
-		c.Closed = true
+		if c != nil && c.Closed == false {
+			c.conn.Close()
+			c.Closed = true
+		}
+	}
+	// parser
+	if s.Parser == nil {
+		s.Parser = new(parser)
 	}
 }
 

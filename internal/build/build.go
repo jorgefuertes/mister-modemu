@@ -1,6 +1,10 @@
 package build
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/jorgefuertes/mister-modemu/internal/cfg"
+)
 
 var version string = "undefined"
 var user string = "undefined"
@@ -9,12 +13,18 @@ var number string = "undefined"
 
 // Version - complete version string
 func Version() string {
+	if cfg.IsTest() {
+		return "TEST compiled at TEST by TEST (build #TEST)"
+	}
 	return fmt.Sprintf("%s compiled at %s by %s (build #%s)",
 		version, time, user, number)
 }
 
 // VersionShort - short version string
 func VersionShort() string {
+	if cfg.IsTest() {
+		return "TEST"
+	}
 	return version
 }
 

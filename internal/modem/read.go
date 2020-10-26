@@ -2,6 +2,7 @@ package modem
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jorgefuertes/mister-modemu/internal/ascii"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
@@ -18,6 +19,11 @@ func (s *Status) Listen() {
 		s.n, err = s.port.Read(s.b)
 		if err != nil {
 			console.Warn(prefix, err.Error())
+			if err.Error() == "EOF" {
+				s.Close()
+				time.Sleep(250 * time.Millisecond)
+				s.Open(s.sconf.port, s.sconf.baud)
+			}
 			continue
 		}
 		if s.n < 1 {
@@ -33,7 +39,7 @@ func (s *Status) Listen() {
 			}
 		} else {
 			s.echo()
-			// PARSE HERE !!!
+			s.Parser.Parse(s, s.bufToStr())
 		}
 	}
 }

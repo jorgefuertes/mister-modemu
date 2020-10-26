@@ -17,7 +17,7 @@ func main() {
 	// command line flags and params
 	cfg.Config.Env = kingpin.Flag(
 		"environment",
-		"prod or dev",
+		"prod, dev or test",
 	).Short('e').Default("prod").String()
 	cfg.Config.Port = kingpin.Flag(
 		"port",
@@ -43,6 +43,10 @@ func main() {
 
 	if cfg.IsDev() {
 		console.Warn("CFG/ENV", "Development mode ON")
+	} else if cfg.IsTest() {
+		console.Warn("CFG/ENV", "Test mode ON")
+		cfg.TestInit()
+		console.Info("CFG/PORT", "Tester should connect to ", cfg.TestPort2)
 	} else {
 		console.Info("CFG/ENV", "Production mode ON")
 	}
