@@ -1,17 +1,17 @@
 package at
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/glinton/ping"
 	"github.com/jorgefuertes/mister-modemu/internal/build"
 	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 	"github.com/jorgefuertes/mister-modemu/internal/inet"
 	"github.com/jorgefuertes/mister-modemu/internal/modem"
-	"github.com/tatsushid/go-fastping"
 )
 
 // Esp8266 - original AT commands
@@ -91,9 +91,9 @@ func Esp8266(m *modem.Status) {
 		m.OK()
 	})
 
-	// ATE - echo on/off
+	// ATE<0|1> - echo on/off
 	m.Parser.AT("ATE*", func(m *modem.Status) {
-		m.Ate = (m.Parser.GetArg() == "1")
+		m.Ate = (m.Parser.Cmd == "ATE1")
 		m.OK()
 	})
 
@@ -155,27 +155,14 @@ func Esp8266(m *modem.Status) {
 	m.Parser.AT("AT+PING=*", func(m *modem.Status) {
 		host := m.Parser.GetArg()
 
-		p := fastping.NewPinger()
-		ra, err := net.ResolveIPAddr("ip4:icmp", host)
+		res, err := ping.IPv4(context.Background(), host)
 		if err != nil {
 			m.Parser.Error(err)
 			m.ERR()
 			return
 		}
-
-		p.AddIPAddr(ra)
-		p.Network("udp")
-		p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
-			m.WriteLn("+", rtt.String())
-			m.OK()
-			p.Stop()
-		}
-
-		err = p.Run()
-		if err != nil {
-			m.Parser.Error(err)
-			m.ERR()
-		}
+		m.WriteLn(fmt.Sprintf("+%v", res.RTT.Milliseconds()))
+		m.OK()
 	})
 
 	// AT+CWMODE_ (Query)
@@ -207,13 +194,14 @@ func Esp8266(m *modem.Status) {
 		var keep int
 		var err error
 
+		args := m.Parser.GetArgs()
 		next := 0
 		if !m.CipMux {
 			// One conn, and one less argument
 			id = 0
 		} else {
 			// multiple conn
-			id, err = strconv.Atoi(m.Parser.GetArgs()[0])
+			id, err = strconv.Atoi(args[0])
 			if err != nil {
 				m.Parser.Error("Invalid connection ID")
 				m.ERR()
@@ -223,7 +211,7 @@ func Esp8266(m *modem.Status) {
 		}
 
 		// type
-		t = strings.ToUpper(m.Parser.GetArgs()[next])
+		t = strings.ToUpper(args[next])
 		if t != "TCP" && t != "UDP" {
 			m.Parser.Error("Unimplemented conn type")
 			m.ERR()
@@ -232,11 +220,11 @@ func Esp8266(m *modem.Status) {
 		next++
 
 		// remote IP
-		ip = m.Parser.GetArgs()[next]
+		ip = args[next]
 		next++
 
 		// port
-		port, err = strconv.Atoi(m.Parser.GetArgs()[next])
+		port, err = strconv.Atoi(args[next])
 		if err != nil {
 			m.Parser.Error("Invalid port")
 			m.ERR()
@@ -245,8 +233,8 @@ func Esp8266(m *modem.Status) {
 		next++
 
 		// keep alive
-		if len(m.Parser.GetArgs()) > next {
-			keep, err = strconv.Atoi(m.Parser.GetArgs()[next])
+		if len(args) > next {
+			keep, err = strconv.Atoi(args[next])
 			if err != nil {
 				m.Parser.Error("Invalid keep alive")
 				m.ERR()

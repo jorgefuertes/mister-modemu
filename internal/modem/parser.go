@@ -66,9 +66,9 @@ func (p *parser) Error(err interface{}) {
 
 // GetArg - one arg line, even if it has colon sep args
 func (p *parser) GetArg() string {
-	r := regexp.MustCompile(`^[A-Z_]+\=\"*(?P<Arg>.*)\"*$`)
+	r := regexp.MustCompile(`\A.*=\"*(?P<Arg>[^"]+)\"*\z`)
 	m := r.FindStringSubmatch(p.Cmd)
-	console.Debug(`AT/PARSER/ARG`, m)
+	console.Debug(`AT/PARSER/ARG`, p.Cmd, "-->", m[1])
 	if len(m) < 2 {
 		return ""
 	}
@@ -77,7 +77,10 @@ func (p *parser) GetArg() string {
 
 // GetArgs - slice of args from colon sep args
 func (p *parser) GetArgs() []string {
-	args := strings.Split(p.GetArg(), ",")
+	r := regexp.MustCompile(`\A.*=(?P<Arg>.*)\z`)
+	m := r.FindStringSubmatch(p.Cmd)
+	console.Debug(`AT/PARSER/ARGS`, p.Cmd, "-->", m[1])
+	args := strings.Split(m[1], ",")
 	for i, a := range args {
 		args[i] = strings.Trim(a, `"`)
 		console.Debug(`AT/PARSER/ARGS`, args[i])

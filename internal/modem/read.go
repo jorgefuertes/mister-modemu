@@ -29,6 +29,9 @@ func (s *Status) Listen() {
 		if s.n < 1 {
 			continue
 		}
+		if s.n == 1 && s.b[0] == 0 && !s.cipsend.on {
+			continue
+		}
 
 		console.Debug(prefix, s.n, " bytes: ", s.bufToDebug())
 		if s.cipsend.on {
@@ -39,7 +42,10 @@ func (s *Status) Listen() {
 			}
 		} else {
 			s.echo()
-			s.Parser.Parse(s, s.bufToStr())
+			cmd := s.bufToStr()
+			if cmd != "" {
+				s.Parser.Parse(s, s.bufToStr())
+			}
 		}
 	}
 }

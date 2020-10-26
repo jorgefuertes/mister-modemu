@@ -91,7 +91,7 @@ func (c *connection) listen(s *Status) {
 // GetConn - connection by ID
 func (m *Status) GetConn(id uint8) (*connection, error) {
 	for _, c := range m.Connections {
-		if c.ID == id && c.Closed == false {
+		if c != nil && c.ID == id && c.Closed == false {
 			return c, nil
 		}
 	}
