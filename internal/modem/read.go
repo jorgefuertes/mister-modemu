@@ -10,7 +10,7 @@ import (
 
 // Listen - listen neverending loop
 func (s *Status) Listen() {
-	prefix := `SER/LST`
+	prefix := `SER/RX`
 	var err error
 	for {
 		if s.cipsend.on {
@@ -57,7 +57,7 @@ func (s *Status) echo() {
 }
 
 func (s *Status) recData() {
-	prefix := `SER/RDATA`
+	prefix := `SER/RX/RDATA`
 	// len bytes mode
 	console.Debug(prefix, "CIPSEND ON (len bytes mode)")
 	// cheking for ATE0, that will be a lost connection or a reseted computer
@@ -113,7 +113,7 @@ func (s *Status) recData() {
 }
 
 func (s *Status) recPacket() {
-	prefix := `SER/RPACKET`
+	prefix := `SER/RX/RPACKET`
 	// packet mode
 	console.Debug(prefix, "CIPSEND ON (packet mode)")
 	for i := 0; i < s.n; i++ {

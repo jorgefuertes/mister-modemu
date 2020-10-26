@@ -14,11 +14,11 @@ import (
 
 // conn log prefix
 func (c *connection) prefix() string {
-	return fmt.Sprintf("NET/LISTEN/%v:%v", c.IP, c.Port)
+	return fmt.Sprintf("INET/CONN/%v:%v", c.IP, c.Port)
 }
 
-// run link listener
-func (c *connection) listen(s *Status) {
+// Listen - run link listener
+func (c *connection) Listen(s *Status) {
 	var err error
 	var res string
 	c.b = make([]byte, 2048)
@@ -110,21 +110,24 @@ func (m *Status) NewConn(id uint8, t string, ip string, port int, keep int) erro
 		return errors.New("Connection ID should be >= 0 and <= 4")
 	}
 
+	t = strings.ToLower(t)
+
 	m.Connections[id] = &connection{
 		ID:     id,
-		T:      strings.ToLower(t),
+		T:      t,
 		IP:     ip,
 		Port:   port,
 		Keep:   keep,
 		Closed: false,
 	}
 
-	console.Debug(`INET/CONN`, "New connection ", m.Connections[id].String())
+	console.Debug(m.Connections[id].prefix(), "New connection")
 
 	m.Connections[id].conn, err = net.Dial(t, fmt.Sprintf("%s:%d", ip, port))
-
 	if err != nil {
-		console.Warn(`INET/CONN`, fmt.Sprintf("Cannot dial %s %s:%d", t, ip, port))
+		console.Warn(m.Connections[id].prefix(),
+			fmt.Sprintf("Cannot dial %s %s:%d", t, ip, port))
+		m.Connections[id].Closed = true
 		return err
 	}
 
@@ -138,7 +141,7 @@ func (c *connection) String() string {
 
 // Close - Link close
 func (c *connection) close() {
-	console.Debug(`INET/CONN`, "Closing link ", c.String())
+	console.Debug(c.prefix(), "Closing link ", c.String())
 	c.conn.Close()
 	c.Closed = true
 }
@@ -154,6 +157,7 @@ func (c *connection) Connect() error {
 		return err
 	}
 	console.Debug(c.prefix(), "Connected")
+
 	return nil
 }
 
@@ -166,5 +170,7 @@ func (m *Status) Connect(id uint8) error {
 	if err = c.Connect(); err != nil {
 		return err
 	}
+
+	go c.Listen(m)
 	return nil
 }
