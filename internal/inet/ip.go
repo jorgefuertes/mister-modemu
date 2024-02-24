@@ -1,7 +1,6 @@
 package inet
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 
@@ -81,7 +80,7 @@ func GetLocalMask() string {
 		if i > 0 {
 			mask += `.`
 		}
-		mask += fmt.Sprintf("%s", strconv.Itoa(int(v)))
+		mask += strconv.Itoa(int(v))
 	}
 	return mask
 }

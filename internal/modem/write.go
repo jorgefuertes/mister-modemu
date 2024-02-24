@@ -69,7 +69,7 @@ func (s *Status) Write(data ...interface{}) (int, error) {
 		case []byte:
 			s.WriteBytes(&v)
 		default:
-			err = fmt.Errorf("I don't know how to write this: %q(%t)", d, d)
+			err = fmt.Errorf("cannot write this: %q(%t)", d, d)
 		}
 
 		if err != nil {

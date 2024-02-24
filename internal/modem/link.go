@@ -1,7 +1,6 @@
 package modem
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/jorgefuertes/mister-modemu/internal/ascii"
 	"github.com/jorgefuertes/mister-modemu/internal/cfg"
 	"github.com/jorgefuertes/mister-modemu/internal/console"
+	"github.com/jorgefuertes/mister-modemu/internal/modem_error"
 )
 
 // conn log prefix
@@ -71,7 +71,7 @@ func (c *connection) Listen(s *Status) {
 					}
 				}
 			}
-			if s.CipMux == false {
+			if !s.CipMux {
 				res = fmt.Sprintf("+IPD,%v", c.n)
 			} else {
 				res = fmt.Sprintf("+IPD,%v,%v", c.ID, c.n)
@@ -91,23 +91,23 @@ func (c *connection) Listen(s *Status) {
 // GetConn - connection by ID
 func (m *Status) GetConn(id uint8) (*connection, error) {
 	for _, c := range m.Connections {
-		if c != nil && c.ID == id && c.Closed == false {
+		if c != nil && c.ID == id && !c.Closed {
 			return c, nil
 		}
 	}
 
-	return nil, errors.New("Connection not found")
+	return nil, modem_error.ConnNotFound
 }
 
 // NewConn - define new connection
 func (m *Status) NewConn(id uint8, t string, ip string, port int, keep int) error {
 	var err error
 	if _, err = m.GetConn(id); err == nil {
-		return errors.New("Connection already in use")
+		return modem_error.ConnAlreadyInUse
 	}
 
 	if id > 4 {
-		return errors.New("Connection ID should be >= 0 and <= 4")
+		return modem_error.ConnIdOutOfRange
 	}
 
 	t = strings.ToLower(t)

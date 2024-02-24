@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jorgefuertes/mister-modemu/internal/console"
+	"github.com/jorgefuertes/mister-modemu/internal/modem_error"
 )
 
 // finds an AT route by its name
@@ -15,13 +16,13 @@ func (p *parser) findByPath(path string) (*route, error) {
 			return &r, nil
 		}
 	}
-	return nil, errors.New("Route not found")
+	return nil, modem_error.RouteNotFound
 }
 
 // AT - Add an AT route
 func (p *parser) AT(path string, cb func(s *Status)) error {
 	if _, err := p.findByPath(path); err == nil {
-		return errors.New("Route already exists")
+		return modem_error.RouterAlreadyExists
 	}
 
 	needle := strings.ReplaceAll(path, `*`, `.*`)

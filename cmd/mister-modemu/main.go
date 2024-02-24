@@ -38,7 +38,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println(cfg.Banner)
+	fmt.Print(cfg.Banner)
 	fmt.Println(build.Version() + "\n")
 
 	if cfg.IsDev() {

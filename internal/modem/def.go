@@ -73,7 +73,7 @@ func (s *Status) Reset() {
 	s.CipMux = false
 	s.Cw = 1
 	// buffer
-	s.b = make([]byte, 2048, 2048)
+	s.b = make([]byte, 2048)
 	s.n = 0
 	s.CipClearAll()
 	// port
@@ -82,7 +82,7 @@ func (s *Status) Reset() {
 	}
 	// links
 	for _, c := range s.Connections {
-		if c != nil && c.Closed == false {
+		if c != nil && !c.Closed {
 			c.conn.Close()
 			c.Closed = true
 		}
