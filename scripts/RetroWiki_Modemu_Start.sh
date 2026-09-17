@@ -42,7 +42,7 @@ if [[ $LOCAL != $LATEST ]]
 then
       echo "Downloading new release ${LATEST}"
       LATEST_URL=$(curl -ksL $GHAPI/releases|jq -r '.[0].assets[0].browser_download_url')
-      curl -kL --progress -o $BINDIR/modemu-latest.gz $LATEST_URL
+      curl -kL --progress-bar -o $BINDIR/modemu-latest.gz $LATEST_URL
       if [[ $? -eq 0 ]]
       then
             echo "Decrunching ${LATEST}..."
